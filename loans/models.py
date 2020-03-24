@@ -5,6 +5,14 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 
+def validate_file_extension(value):
+    ext = os.path.splitext(value.name)[1]  # [0] returns path+filename
+    valid_extensions = ['.pdf', '.doc', '.docx',
+                        '.jpg', '.png', '.xlsx', '.xls']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension.')
+
+
 class LoanType(models.Model):
     loan_type_options = [
         ('Business', 'Business'),
@@ -127,6 +135,13 @@ class LoanRepayment(models.Model):
         ("4:00pm-7:59pm", "4:00pm-7:59pm"),
         ("8:00pm-11.59pm", "8:00pm-11.59pm"),
     )
+    repayment_mode = (
+        ("Cash", "Cash"),
+        ("Cheque", "Cheque"),
+        ("Wire Transfer", "Wire Transfer"),
+        ("Online Transfer", "Online Transfer"),
+        ("PayPal", "PayPal"),
+    )
     loan_repayment_choices = (
         ("accepted", "accepted"),
         ("pending", "pending"),
@@ -166,6 +181,10 @@ class LoanRepayment(models.Model):
         max_length=60, choices=charge_interest_choices)
     repayment_cycle = models.CharField(choices=repayment_cycle_types,
                                        max_length=400, blank=True, null=True)
+    repayment_mode = models.CharField(choices=repayment_mode,
+                                      max_length=400, blank=True, null=True)
+    proof_of_payment = models.FileField(validators=[validate_file_extension],
+                                        upload_to="repayments", blank=True, null=True)
 
 
 class LoanDisbursement(models.Model):
