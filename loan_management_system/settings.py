@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'notifications',
     'savings_investments',
     'staffs',
-    'borrowers'
+    'borrowers',
+    'reports'
 ]
 
 MIDDLEWARE = [
