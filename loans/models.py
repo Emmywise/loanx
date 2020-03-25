@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 import os
 from django.core.exceptions import ValidationError
 from borrowers.models import Borrower
+from accounts.models import Profile, Branch
 # Create your models here.
 
 
@@ -97,6 +98,7 @@ class Loan(models.Model):
         ('round_up_10', 'round_up_10'),
         ('round_off_100', 'round_off_100'),
     )
+    branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
