@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
-
+import os
+from django.core.exceptions import ValidationError
 # Create your models here.
 
 
@@ -21,9 +22,23 @@ class LoanType(models.Model):
         ('Personal', 'Personal'),
         ('Student', 'Student')
     ]
+    penalty_choices = [
+        ('Fully Paid Loans', 'Fully Paid Loans'),
+        ('Defaulted Loans', (
+            ('Credit Counseling Loans', 'Credit Counseling Loans'),
+            ('Collection Agency Loans', 'Collection Agency Loans'),
+            ('Sequestrate Loans', 'Sequestrate Loans'),
+            ('Debt Review Loans', 'Debt Review Loans'),
+            ('Fraud Loans', 'Fraud Loans'),
+            ('Legal Loans', 'Legal Loans'),
+            ('Write-Off Loans', 'Write-Off Loans')
+        )
+        ),
+    ]
     penalty_rate = models.DecimalField(max_digits=10, decimal_places=2)
     name = models.CharField(choices=loan_type_options, max_length=100)
     interest_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    apply_penaly_to = models.CharField(choices=penalty_choices, max_length=100)
 
     def __str__(self):
         return self.name
@@ -31,19 +46,32 @@ class LoanType(models.Model):
 
 class Loan(models.Model):
     status_choices = (
-        ("pending", "pending"),
-        ("accepted", "accepted"),
-        ("rejected", "rejected"),
-        ("settled", "settled"),
-        ("disbursed", "disbursed"),
-        ("canceled", "canceled")
+        ("processing", "processing"),
+        ("open", (
+            ("current", "current"),
+            ("due today", "due today"),
+            ("missed repayment", "missed repayment"),
+            ("arrears", "arrears"),
+            ("past maturity", "past maturity")
+        )
+        ),
+        ("restructured", "restructured"),
+        ("fully paid", "fully paid"),
+        ("defaulted", (
+            ("credit counselling", "credit counselling"),
+            ("collection agency", "collection agency"),
+            ("sequestrate", "sequestrate"),
+            ("debt review", "debt review"),
+            ("fraud", "fraud"),
+            ("investigation", "investigation"),
+            ("legal", "legal"),
+            ("write-off", "write-off"),
+        )
+        ),
+        ("denied", "denied"),
+        ("not taken up", "not taken up")
     )
-    disbursement_mode_types = (
-        ("Cash", "Cash"),
-        ("Cheque", "Cheque"),
-        ("Wire Transfer", "Wire Transfer"),
-        ("Online Transfer", "Online Transfer")
-    )
+
     interest_type_types = (
         ('Percentage Based', 'Percentage Based'),
         ('Fixed Amount Per Cycle', 'Fixed Amount Per Cycle'),
@@ -68,11 +96,9 @@ class Loan(models.Model):
         ('round_up_10', 'round_up_10'),
         ('round_off_100', 'round_off_100'),
     )
-    #borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
+    # borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
-    disbursement_mode = models.CharField(
-        choices=disbursement_mode_types, max_length=100)
     duration = models.PositiveIntegerField(default=1)
     status = models.CharField(
         max_length=30, choices=status_choices, default='pending')
@@ -92,14 +118,10 @@ class Loan(models.Model):
     loan_duration_period = models.CharField(choices=loan_duration_period_types,
                                             max_length=400, blank=True, null=True)
 
-    number_of_repayments = models.PositiveIntegerField(default=1)
     decimal_places = models.CharField(
         choices=decimal_places_types, max_length=400, blank=True, null=True)
     interest_start_date = models.DateField(blank=True, null=True)
-    first_repayment_date = models.DateField(blank=True, null=True)
-    last_repayment_date = models.DateField(blank=True, null=True)
-    first_repayment_on_prorata = models.BooleanField(default=False)
-    adjust_remaining_repayments = models.BooleanField(default=False)
+
     maturity_date = models.DateField(blank=True, null=True)
     repayment_amount = models.CharField(
         max_length=400, blank=True, null=True)
@@ -108,7 +130,9 @@ class Loan(models.Model):
     remaining_balance = models.CharField(
         max_length=400, blank=True, null=True)
     interest_on_prorata = models.BooleanField(default=False)
-    #ref_id = models.CharField(max_length=100, blank=True, null=True)
+    released = models.BooleanField(default=False)
+    maturity = models.BooleanField(default=False)
+    # ref_id = models.CharField(max_length=100, blank=True, null=True)
     # authorization_code = models.CharField(
     #     max_length=100, blank=True, null=True)
     loan_score = models.PositiveIntegerField(blank=True, null=True)
@@ -126,6 +150,24 @@ class Loan(models.Model):
     #     return self.profile.user.username
 
 
+class LoanOfficer(models.Model):
+    loan = models.ManyToManyField(Loan)
+    name = models.CharField(max_length=128, blank=True, null=True)
+    phonenumber = models.CharField(max_length=128, blank=True, null=True)
+
+
+class LoanRepaymentMethod(models.Model):
+    repayment_mode = (
+        ("Cash", "Cash"),
+        ("Cheque", "Cheque"),
+        ("Wire Transfer", "Wire Transfer"),
+        ("Online Transfer", "Online Transfer"),
+        ("PayPal", "PayPal"),
+    )
+    mode = models.CharField(choices=repayment_mode,
+                            max_length=400, blank=True, null=True)
+
+
 class LoanRepayment(models.Model):
     time_to_post = (
         ("12:00am-3:59am", "12:00am-3:59am"),
@@ -135,13 +177,7 @@ class LoanRepayment(models.Model):
         ("4:00pm-7:59pm", "4:00pm-7:59pm"),
         ("8:00pm-11.59pm", "8:00pm-11.59pm"),
     )
-    repayment_mode = (
-        ("Cash", "Cash"),
-        ("Cheque", "Cheque"),
-        ("Wire Transfer", "Wire Transfer"),
-        ("Online Transfer", "Online Transfer"),
-        ("PayPal", "PayPal"),
-    )
+
     loan_repayment_choices = (
         ("accepted", "accepted"),
         ("pending", "pending"),
@@ -181,14 +217,35 @@ class LoanRepayment(models.Model):
         max_length=60, choices=charge_interest_choices)
     repayment_cycle = models.CharField(choices=repayment_cycle_types,
                                        max_length=400, blank=True, null=True)
-    repayment_mode = models.CharField(choices=repayment_mode,
-                                      max_length=400, blank=True, null=True)
+    repayment_mode = models.ForeignKey(
+        LoanRepaymentMethod, on_delete=models.DO_NOTHING)
     proof_of_payment = models.FileField(validators=[validate_file_extension],
                                         upload_to="repayments", blank=True, null=True)
 
+    collector = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING)
+    number_of_repayments = models.PositiveIntegerField(default=1)
+    grace_period = models.PositiveIntegerField(default=0)
+    grace_period_once_per_loan = models.BooleanField(default=False)
+    penalty_branch_holiday = models.BooleanField(default=True)
+    first_repayment_date = models.DateField(blank=True, null=True)
+    last_repayment_date = models.DateField(blank=True, null=True)
+    first_repayment_on_prorata = models.BooleanField(default=False)
+    adjust_remaining_repayments = models.BooleanField(default=False)
+    amortization = models.CharField(max_length=400, blank=True, null=True)
+    days_passed = models.PositiveIntegerField(default=10)
+    pending_due = models.CharField(max_length=400, blank=True, null=True)
+
 
 class LoanDisbursement(models.Model):
+    disbursement_mode_types = (
+        ("Cash", "Cash"),
+        ("Cheque", "Cheque"),
+        ("Wire Transfer", "Wire Transfer"),
+        ("Online Transfer", "Online Transfer")
+    )
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
+    disbursement_mode = models.CharField(
+        choices=disbursement_mode_types, max_length=100)
 
     def __str__(self):
         return self.loan.profile.user.username
@@ -198,17 +255,12 @@ class LoanComment(models.Model):
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
     text = models.CharField(max_length=128, blank=True, null=True)
     date = models.DateField(blank=True, null=True)
+    author = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING)
 
 
 class LoanGroup(models.Model):
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=128, blank=True, null=True)
-
-
-class LoanOfficer(models.Model):
-    loan = models.ManyToManyField(Loan)
-    name = models.CharField(max_length=128, blank=True, null=True)
-    phonenumber = models.CharField(max_length=128, blank=True, null=True)
 
 
 class LoanRemainder(models.Model):
@@ -263,18 +315,62 @@ class LoanAttachments(models.Model):
         return self.name
 
 
-class LoanCollateral(models.Model):
+class LoanCollateralTypes(models.Model):
     loan_type_choice = (
-        ('type1', 'type1'),
-        ('type2', 'type2'),
-        ('type3', 'type3')
+        ('Automobiles', 'Automobiles'),
+        ('Electronic Items', 'Electronic Items'),
+        ('Insurance Policies', 'Insurance Policies'),
+        ('Investments', 'Investments'),
+        ('Machineries and Equipments', 'Machineries and Equipments'),
+        ('Real Estate', 'Real Estate'),
+        ('Valuables and Collectibles', 'Valuables and Collectibles'),
+        ('Others', 'Others')
     )
-    loan_type = models.CharField(
+    division = models.CharField(
         choices=loan_type_choice, max_length=100)
+
+
+class LoanCollateral(models.Model):
+    current_status = (
+        ('Deposited into branch', 'Deposited into branch'),
+        ('Collateral with borrower', 'Collateral with borrower'),
+        ('Returned to borrower', 'Returned to borrowerI'),
+        ('Repossession initiated', 'Repossession initiated'),
+        ('under auction', 'under auction'),
+        ('sold', 'sold'),
+        ('lost', 'lost'),)
+
+    condition_choices = (
+        ('Excellent', 'Excellent'),
+        ('Good', 'Good'),
+        ('Fair', 'Fair'),
+        ('Damaged', 'Damaged'),)
+    collateral_type = models.ForeignKey(
+        LoanCollateralTypes, on_delete=models.DO_NOTHING)
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
-    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    value = models.DecimalField(max_digits=20, decimal_places=2)
     register_date = models.DateField(blank=True, null=True)
+    current_status = models.CharField(
+        choices=current_status, max_length=100)
+    item_state = models.CharField(
+        choices=condition_choices, max_length=100)
+    last_updated_date = models.DateField(auto_now=True)
+    serial_number = models.CharField(max_length=128, blank=True, null=True)
+    model_name = models.CharField(max_length=128, blank=True, null=True)
+    model_number = models.CharField(max_length=128, blank=True, null=True)
+    colour = models.CharField(max_length=128, blank=True, null=True)
+    date_of_manufacturer = models.CharField(
+        max_length=128, blank=True, null=True)
+    address = models.CharField(max_length=128, blank=True, null=True)
+    description = models.CharField(max_length=128, blank=True, null=True)
+    reg_no = models.CharField(max_length=128, blank=True, null=True)
+    mileage = models.CharField(max_length=128, blank=True, null=True)
+    engine_no = models.CharField(max_length=128, blank=True, null=True)
+    collateral_photo = models.FileField(validators=[validate_file_extension],
+                                        upload_to="repayments", blank=True, null=True)
+    collateral_files = models.FileField(validators=[validate_file_extension],
+                                        upload_to="repayments", blank=True, null=True)
 
     def __str__(self):
         return self.name
