@@ -62,6 +62,7 @@ class Borrower(models.Model):
     borrower_photo = models.ImageField(blank=True, null=True)
     description = models.CharField(
         max_length=400)
+    is_activated = models.BooleanField(default=False)
 
     borrower_group = models.ManyToManyField(
         "BorrowerGroup")
