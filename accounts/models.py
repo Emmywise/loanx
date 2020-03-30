@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+import random
+import string
 # Create your models here.
 
 
@@ -77,6 +80,29 @@ class Profile(models.Model):
     user_type = models.CharField(max_length=20, choices=user_type_choices)
     # user_role
     is_super_admin = models.BooleanField(default=False)
+    activation_token = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.user.username
+
+
+class AccountResetLink(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reset_token = models.CharField(max_length=400, blank=True, null=True, unique=True)
+    date_time = models.DateTimeField(auto_now_add=True)
+
+
+def generate_token():
+    token = ''
+    for i in range(50):
+        token += random.choice(string.ascii_letters + string.digits + string.hexdigits)
+    return token
+
+
+def reset_token(sender, instance, created, *args, **kwargs):
+    if not instance.reset_token:
+        instance.reset_token = generate_token()
+        instance.save()
+
+
+post_save.connect(reset_token, sender=AccountResetLink)
