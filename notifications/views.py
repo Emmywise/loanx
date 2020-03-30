@@ -15,6 +15,8 @@ from .models import SMS
 from .send_sms import SendSMSAPI
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
+from celery import shared_task
+
 
 # Create your views here.
 class SendSMS(APIView):
@@ -63,3 +65,5 @@ class SendEmail(APIView):
         # except:
         #     return Response({"message": "Failed"}, status=status.HTTP_400_BAD_REQUEST)
         
+
+
