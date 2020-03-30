@@ -61,3 +61,40 @@ def get_post_borrower(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'DELETE', 'PUT'])
+def get_delete_update_borrower_group(request, pk):
+    try:
+        borrower_group = BorrowerGroup.objects.get(pk=pk)
+    except BorrowerGroup.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'GET':
+        serializer = BorrowerGroupSerializer(borrower)
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        return Response({})
+    elif request.method == 'PUT':
+        return Response({})
+
+
+@api_view(['GET', 'POST'])
+def get_post_borrower_group(request):
+    # get all restaurants
+    if request.method == 'GET':
+        borrower_groups = BorrowerGroup.objects.all()
+        serializer = BorrowerGroupSerializer(borrower_groups, many=True)
+        return Response(serializer.data)
+    # insert a new record for a restaurant
+    elif request.method == 'POST':
+        data = {
+            'group_name': request.data.get('group_name'),
+            'group_leader': request.data.get('group_leader'),
+            'meeting_date': request.data.get('meeting_date'),
+            'description': request.data.get('description'),
+        }
+        serializer = BorrowerGroupSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
