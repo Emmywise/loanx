@@ -51,4 +51,9 @@ urlpatterns = [
     path('api/send-reset-password/', SendResetPassword.as_view()),
     path('api/confirm-reset-token/', ConfirmResetToken.as_view()),
     path('api/reset-password/', ResetPassword.as_view()),
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('notifications/', include('notifications.urls')) 
 ]
+

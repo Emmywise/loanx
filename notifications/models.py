@@ -3,19 +3,17 @@ from django.db.models.signals import post_save
 # Create your models here.
 
 
-class SendSMS(models.Model):
+class SMS(models.Model):
     status_choices = (
         ('sent', 'sent'),
-        ('delivered', 'delivered'),
+        ('pending', 'pending'),
         ('failed', 'failed'),
     )
     message_purpose_choices = (
-        ('Message to all borrowers', 'to_all_borrowers'),
+        ('to_all_borrowers', 'to_all_borrowers'),
         ('delivered', 'delivered'),
         ('failed', 'failed'),
     )
-    message = models.CharField(
-        max_length=200)
     date_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         choices=status_choices, max_length=100)
@@ -23,17 +21,17 @@ class SendSMS(models.Model):
         choices=message_purpose_choices, max_length=100)
 
 
-def send_msg():
-    return 'sent'
+# def send_msg():
+#     return 'sent'
 
 
-def check_status(sender, instance, created, *args, **kwargs):
-    if not instance.send_message:
-        instance.status = send_msg()
-        instance.save()
+# def check_status(sender, instance, created, *args, **kwargs):
+#     if not instance.send_message:
+#         instance.status = send_msg()
+#         instance.save()
 
 
-post_save.connect(check_status, sender=SendSMS)
+# post_save.connect(check_status, sender=SendSMS)
 
 
 class SendEmail(models.Model):
