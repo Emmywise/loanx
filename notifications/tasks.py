@@ -9,3 +9,5 @@ def send_sms():
 @shared_task
 def send_mail():
     return SendEmail()
+
+    

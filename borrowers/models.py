@@ -1,9 +1,9 @@
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 import os
 # Create your models here.
-
 
 class Borrower(models.Model):
     gender_choices = (
@@ -59,7 +59,7 @@ class Borrower(models.Model):
         max_length=400)
     working_status = models.CharField(
         choices=working_status_choices, max_length=100)
-    borrower_photo = models.ImageField(blank=True, null=True)
+    borrower_photo = CloudinaryField('image',null=True, blank=True)
     description = models.CharField(
         max_length=400)
     is_activated = models.BooleanField(default=False)
