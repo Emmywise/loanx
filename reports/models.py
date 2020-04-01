@@ -8,8 +8,8 @@ from accounts.models import Branch
 class CalendarEvent(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     title = models.CharField(max_length=125)
-    when_date = models.DateTimeField()
-    from_date = models.DateTimeField(blank=True, null=True)
+    date = models.DateTimeField()
+    till_date = models.DateTimeField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -37,6 +37,9 @@ class CalendarLog(models.Model):
     log_type = models.CharField(max_length=100, choices=log_type_choices)
     url_path = models.CharField(max_length=400)
     date = models.DateTimeField()
+
+    class Meta:
+        get_latest_by = ['-date']
 
     def __str__(self):
         return str(self.date)

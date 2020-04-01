@@ -81,6 +81,7 @@ class Profile(models.Model):
     # user_role
     is_super_admin = models.BooleanField(default=False)
     activation_token = models.CharField(max_length=100, blank=True, null=True)
+    esignature = models.FileField(upload_to='esignature', blank=True, null=True)
 
     def __str__(self):
         return self.user.username

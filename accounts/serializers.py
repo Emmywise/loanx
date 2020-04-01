@@ -51,6 +51,7 @@ class UserSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20, required=False)
     active = serializers.BooleanField(default=False, required=False)
     is_super_admin = serializers.BooleanField(default=False, required=False)
+    esignature = serializers.FileField(required=False)
     branch = serializers.IntegerField(required=False)
 
     def validate_username(self, value):
@@ -104,7 +105,8 @@ class UserSerializer(serializers.Serializer):
             phone=validated_data.get('phone'),
             active=validated_data.get('active'),
             is_super_admin=validated_data.get('is_super_admin'),
-            branch=branch
+            branch=branch,
+            esignature=validated_data.get('esignature')
         )
         return {
             'id': user.id,
@@ -117,7 +119,8 @@ class UserSerializer(serializers.Serializer):
             'phone': profile.phone,
             'active': profile.active,
             'branch': profile.branch.id,
-            'is_super_admin': profile.is_super_admin
+            'is_super_admin': profile.is_super_admin,
+            'esignature': profile.esignature
         }
 
     def check_value(self, key):

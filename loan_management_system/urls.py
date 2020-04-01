@@ -26,6 +26,10 @@ from accounts.views import (
     ResetPassword
 )
 from staffs.views import PayrollViewSet
+from reports.views import (
+    CalendarEventViewSet, CalendarLogViewSet,
+    CalenderEventEmailViewSet
+)
 
 router = DefaultRouter()
 
@@ -35,6 +39,9 @@ router.register('branch', BranchViewSet, 'branch')
 router.register('branch-holiday', BranchHolidayViewSet, 'branch-holiday')
 router.register('branch-admin', BranchAdminViewSet, 'branch-admin')
 router.register('user-profile', UserProfileViewSet, 'user-profile')
+router.register('calendar-events', CalendarEventViewSet, 'calendar-events')
+router.register('calendar-logs', CalendarLogViewSet, 'calendar-logs')
+router.register('calendar-events-email', CalenderEventEmailViewSet, 'calendar-events-email')
 
 router.register('payroll', PayrollViewSet, 'payroll')
 
@@ -51,9 +58,6 @@ urlpatterns = [
     path('api/send-reset-password/', SendResetPassword.as_view()),
     path('api/confirm-reset-token/', ConfirmResetToken.as_view()),
     path('api/reset-password/', ResetPassword.as_view()),
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
     path('notifications/', include('notifications.urls')) 
 ]
 
