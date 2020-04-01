@@ -1,10 +1,12 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework import status
 from .models import *
 from .serializers import *
 
+import cloudinary.uploader
 
 @api_view(['GET', 'DELETE', 'PUT'])
 def get_delete_update_borrower(request, pk):
@@ -26,6 +28,11 @@ def get_delete_update_borrower(request, pk):
 
 
 @api_view(['GET', 'POST'])
+# parser_classes = (
+#     MultiPartParser,
+#     JSONParser,
+# )
+# @staticmethod
 def get_post_borrower(request):
     # get all restaurants
     if request.method == 'GET':
@@ -56,6 +63,7 @@ def get_post_borrower(request):
             'is_activated': request.data.get('is_activated'),
             'borrower_group': request.data.get('borrower_group')
         }
+        upload_data = cloudinary.uploader.upload(data['borrower_photo'])
         serializer = BorrowerSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

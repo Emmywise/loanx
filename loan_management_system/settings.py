@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import cloudinary
 import datetime
-CELERY_BROKER_URL = 'amqp://localhost'
 CELERY_TIMEZONE = 'Asia/Kolkata'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -52,8 +52,7 @@ INSTALLED_APPS = [
     'borrowers',
     'reports',
     'django_celery_beat',
-    #'djcelery_email',
-    #'kombu.transport.django'
+    'cloudinary',
 ]
 
 MIDDLEWARE = [
@@ -160,26 +159,31 @@ JWT_AUTH = {
 PAYSTACK_SECRET = 'sk_test_40842031d9cd521f662260d98a0248ed8c569d73'
 
 
-# EMAIL_HOST = 'smtp.mailtrap.io'
-# EMAIL_HOST_USER = 'a57749b03c3567'
-# EMAIL_HOST_PASSWORD = '67fb1ed70579d6'
-# EMAIL_PORT = '2525'
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.mailtrap.io'
+EMAIL_HOST_USER = 'a57749b03c3567'
+EMAIL_HOST_PASSWORD = '67fb1ed70579d6'
+EMAIL_PORT = '2525'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672/'
 
-CELERY_BROKER_URL = 'amqp://localhost'
+#CELERY_BROKER_URL = 'amqp://localhost'
 
 CELERY_TIMEZONE = 'Asia/Kolkata'
 
-EMAIL_HOST = 'SMTP_HOST'
+# EMAIL_HOST = 'SMTP_HOST'
 
-EMAIL_PORT = 'SMTP_PORT'
+# EMAIL_PORT = 'SMTP_PORT'
 
-EMAIL_HOST_USER = 'SMTP_USER'
+# EMAIL_HOST_USER = 'SMTP_USER'
 
-EMAIL_HOST_PASSWORD = 'SMTP_PASSWORD'
+# EMAIL_HOST_PASSWORD = 'SMTP_PASSWORD'
 
-EMAIL_USE_TLS = True # TLS settings
+# EMAIL_USE_TLS = True # TLS settings
 
-EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
+# EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
+cloudinary.config(
+    cloud_name = "touchcore",
+    api_key = "283936917543499",
+    api_secret = "HCqgLG_QTAIvrFb7pTLMT43FiDs"
+)

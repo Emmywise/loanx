@@ -65,5 +65,3 @@ class SendEmail(APIView):
         # except:
         #     return Response({"message": "Failed"}, status=status.HTTP_400_BAD_REQUEST)
         
-
-
