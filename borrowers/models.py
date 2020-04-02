@@ -46,7 +46,8 @@ class Borrower(models.Model):
     mobile = models.CharField(
         max_length=11)
     email = models.EmailField(max_length=100)
-    date_of_birth = models.DateTimeField()
+    date_of_birth = models.CharField(
+        max_length=400)
     address = models.CharField(
         max_length=400)
     city = models.CharField(
@@ -64,12 +65,10 @@ class Borrower(models.Model):
         max_length=400)
     is_activated = models.BooleanField(default=False)
 
-    borrower_group = models.ManyToManyField(
-        "BorrowerGroup")
-
 
 class BorrowerGroup(models.Model):
     group_name = models.CharField(max_length=255)
-    group_leader = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
+    group_leader = models.ForeignKey(Borrower, null=True, blank=True, on_delete=models.DO_NOTHING, related_name='group_leader')
     meeting_date = models.DateTimeField()
     description = models.CharField(max_length=255, null=True, blank=True)
+    member = models.ManyToManyField(Borrower)

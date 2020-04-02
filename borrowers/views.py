@@ -28,11 +28,6 @@ def get_delete_update_borrower(request, pk):
 
 
 @api_view(['GET', 'POST'])
-# parser_classes = (
-#     MultiPartParser,
-#     JSONParser,
-# )
-# @staticmethod
 def get_post_borrower(request):
     # get all restaurants
     if request.method == 'GET':
@@ -63,7 +58,10 @@ def get_post_borrower(request):
             'is_activated': request.data.get('is_activated'),
             'borrower_group': request.data.get('borrower_group')
         }
+        print(data['borrower_photo'])
         upload_data = cloudinary.uploader.upload(data['borrower_photo'])
+        data['borrower_photo'] = upload_data['url']
+        print(data)
         serializer = BorrowerSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

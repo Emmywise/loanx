@@ -30,6 +30,7 @@ from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
     CalenderEventEmailViewSet
 )
+from loans.views import LoanView, LoanCommentList, LoanCommentDetail
 
 router = DefaultRouter()
 
@@ -61,5 +62,6 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')) ,
     path('borrowers/', include('borrowers.urls')) ,
     path('borrowers_group/', include('borrowers.urls')) ,
+    path('loans/', LoanView.as_view()) ,
 ]
 
