@@ -110,7 +110,7 @@ class LoanCommentDetail(APIView):
 
     def get(self, request, pk, format=None):
         loan_comment = self.get_object(pk)
-        serializer = LoanCommentSerializer(snippet)
+        serializer = LoanCommentSerializer(loan_comment)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
@@ -125,3 +125,85 @@ class LoanCommentDetail(APIView):
         loan_comment = self.get_object(pk)
         loan_comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PrincipalOutstandingLoan(APIView):
+    def get(self, request, pk=None):
+        principal_outstanding = Loan.objects.filter(status = "current")
+        output = []
+        for unit in principal_outstanding:
+            if(unit.repayment_amount == None):
+                unit.repayment_amount = 0.00
+            if (unit.amount_paid == None):
+                unit.amount_paid = 0
+            if (unit.repayment_amount < unit.principal_amount):
+                rez = {'loan_id':unit.pk, 'released':unit.loan_release_date, 'maturity': unit.maturity_date, 'principal': unit.principal_amount,
+                'principal_paid': unit.amount_paid, 'principal_balance': str(int(unit.principal_amount)-int(unit.amount_paid)), 'principal_due_till_today': unit.remaining_balance,
+                'status': unit.status, 'branch':str(unit.branch.pk), 'borrower':str(unit.borrower.pk)}
+                output.append(rez)
+            else:
+                pass
+        #print(principal_outstanding)
+        #serializer = LoanSerializer(principal_outstanding, many=True)
+        return Response(output)
+
+
+class TotalOpenLoans(APIView):
+    def get(self, request, pk=None):
+        open_loans = Loan.objects.filter(status = "current" or "due today" or "missed repayment" or "arrears" or "past maturity")
+        serializer = LoanSerializer(open_loans, many=True)
+        return Response(serializer.data)
+
+class InterestOutstandingLoan(APIView):
+    def get(self, request, pk=None):
+        principal_outstanding = Loan.objects.filter(status = "current")
+        output = []
+        for unit in principal_outstanding:
+            if(unit.repayment_amount == None):
+                unit.repayment_amount = 0.00
+            if (unit.amount_paid == None):
+                unit.amount_paid = 0
+            interest_amount = int(unit.repayment_amount) - int(unit.principal_amount)
+            if int(unit.amount_paid) > int(unit.principal_amount):
+                interest_amount = interest_amount - int(unit.amount_paid) - int(unit.principal_amount)
+            if (unit.repayment_amount < unit.principal_amount):
+                rez = {'loan_id':unit.pk, 'released':unit.loan_release_date, 'maturity': unit.maturity_date, 'principal': unit.principal_amount,
+                'principal_paid': unit.amount_paid, 'interest_oustanding': str(interest_amount), 'principal_due_till_today': unit.remaining_balance,
+                'status': unit.status, 'branch':str(unit.branch.pk), 'borrower':str(unit.borrower.pk)}
+                output.append(rez)
+            else:
+                pass
+        #print(principal_outstanding)
+        #serializer = LoanSerializer(principal_outstanding, many=True)
+        return Response(output)
+
+
+class FullyPaidLoans(APIView):
+    def get(self, request, pk=None):
+        fully_paid = Loan.objects.filter(status = "fully paid")
+        serializer = LoanSerializer(fully_paid, many=True)
+        return Response(serializer.data)
+
+
+class FeesOutstandingLoan(APIView):
+    def get(self, request, pk=None):
+        fees_outstanding = Loan.objects.filter(status = "current")
+        output = []
+        for unit in fees_outstanding:
+            if(unit.repayment_amount == None):
+                unit.repayment_amount = 0.00
+            if (unit.amount_paid == None):
+                unit.amount_paid = 0
+            interest_amount = int(unit.repayment_amount) - int(unit.principal_amount)
+            if int(unit.amount_paid) > int(unit.principal_amount):
+                interest_amount = interest_amount - int(unit.amount_paid) - int(unit.principal_amount)
+            if (unit.repayment_amount < unit.principal_amount):
+                rez = {'loan_id':unit.pk, 'released':unit.loan_release_date, 'maturity': unit.maturity_date, 'principal': unit.principal_amount,
+                'principal_paid': unit.amount_paid, 'remaining_balance': unit.remaining_balance, 'principal_due_till_today': unit.remaining_balance,
+                'status': unit.status, 'branch':str(unit.branch.pk), 'borrower':str(unit.borrower.pk)}
+                output.append(rez)
+            else:
+                pass
+        #print(principal_outstanding)
+        #serializer = LoanSerializer(principal_outstanding, many=True)
+        return Response(output)
