@@ -31,7 +31,8 @@ from reports.views import (
     CalenderEventEmailViewSet
 )
 from loans.views import (LoanView, LoanCommentList, LoanCommentDetail,
-PrincipalOutstandingLoan, TotalOpenLoans, InterestOutstandingLoan, FullyPaidLoans)
+LoanOfficerList, LoanOfficerDetail, PrincipalOutstandingLoan, TotalOpenLoans, 
+InterestOutstandingLoan, FullyPaidLoans)
 
 router = DefaultRouter()
 
@@ -51,7 +52,6 @@ router.register('payroll', PayrollViewSet, 'payroll')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-
     path('api-token-auth/', obtain_jwt_token),
     path('api-verify-auth/', verify_jwt_token),
     path('api/resend-activation-token/', ResendActivationToken.as_view()),
@@ -66,8 +66,13 @@ urlpatterns = [
     path('loans/', LoanView.as_view()) ,
     path('principal_outstanding_loan/', PrincipalOutstandingLoan.as_view()),
     path('total_open_loan/', TotalOpenLoans.as_view()),
+    path('loan_comments/', LoanCommentList.as_view()),
+    path('loan_comments/<int:pk>', LoanCommentDetail.as_view()),
+    path('loan_officers/', LoanOfficerList.as_view()),
+    path('loan_officers/<int:pk>', LoanOfficerDetail.as_view()),
     path('interest_outstanding_loan/', InterestOutstandingLoan.as_view()),
-    path('fully_paid_loan/', FullyPaidLoans.as_view())
+    path('fully_paid_loan/', FullyPaidLoans.as_view()),
+
 
 ]
 

@@ -4,6 +4,7 @@ import requests
 import hashlib
 import datetime
 
+from django.http import Http404
 from django.utils import timezone
 
 from rest_framework.views import APIView
@@ -94,7 +95,8 @@ class LoanCommentList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, pk=None):
-        loan_comment = LoanComment.objects.all()
+        loan_for = request.GET['loan']
+        loan_comment = LoanComment.objects.filter(loan=int(loan_for))
         serializer = LoanCommentSerializer(loan_comment, many=True)
         return Response(serializer.data)
 
@@ -126,6 +128,49 @@ class LoanCommentDetail(APIView):
         loan_comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class LoanOfficerList(APIView):
+    
+    def post(self, request):
+        # initialize a loan by customer
+        serializer = LoanOfficerSerializer(data=request.data)
+        if serializer.is_valid():
+            # save loan and send loan application email.
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, pk=None):
+        loan_officer = LoanOfficer.objects.all()
+        serializer = LoanOfficerSerializer(loan_officer, many=True)
+        return Response(serializer.data)
+
+class LoanOfficerDetail(APIView):
+    """
+    Retrieve, update or delete a snippet instance.
+    """
+    def get_object(self, pk):
+        try:
+            return LoanOfficer.objects.get(pk=pk)
+        except LoanOfficer.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        loan_officer = self.get_object(pk)
+        serializer = LoanOfficerSerializer(loan_officer)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        loan_officer = self.get_object(pk)
+        serializer = LoanOfficerSerializer(loan_officer, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        loan_officer = self.get_object(pk)
+        loan_officer.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class PrincipalOutstandingLoan(APIView):
     def get(self, request, pk=None):

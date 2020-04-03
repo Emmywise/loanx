@@ -16,12 +16,8 @@ from .send_sms import SendSMSAPI
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 from celery import shared_task
-<<<<<<< HEAD
-from .tasks import send_sms
-=======
 from .tasks import create_random_user_accounts
 
->>>>>>> 25e6c36653d6c5970ec80d687907cc23aa76f8c5
 
 
 # create_random_user_accounts.delay(10)
