@@ -16,7 +16,11 @@ from .send_sms import SendSMSAPI
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 from celery import shared_task
+from .tasks import create_random_user_accounts
 
+
+
+# create_random_user_accounts.delay(10)
 
 # Create your views here.
 class SendSMS(APIView):
@@ -33,6 +37,7 @@ class SendSMS(APIView):
             return {"message": "Success", "status": status.HTTP_200_OK}
         except:
             return {"message": "Failed", "status": status.HTTP_400_BAD_REQUEST}
+            
 
 class SendEmail(APIView):
     def send_mail(self, purpose, sender, recepient):

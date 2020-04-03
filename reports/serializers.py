@@ -12,10 +12,17 @@ class CalendarLogSerializer(serializers.ModelSerializer):
 
 
 class CalendarEventSerializer(serializers.ModelSerializer):
+    emails = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
         model = CalendarEvent
+
+    def get_emails(self, obj):
+        emails = []
+        for email in obj.calendareventemail_set.all():
+            emails.append(CalendarEventEmailSerializer(email).data)
+        return emails
 
 
 class CalendarEventEmailSerializer(serializers.ModelSerializer):

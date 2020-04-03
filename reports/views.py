@@ -76,7 +76,7 @@ class CalendarEventViewSet(ModelViewSet):
         if date_from:
             queryset = queryset.filter(date__gte=date_from)
         if till_date:
-            queryset = queryset.filter(till_date__lte=till_date)
+            queryset = queryset.filter(date__lte=till_date)
         queryset = filter_date(self.request, queryset)
         if q:
             queryset = perform_search_queryset(queryset, q, ['title', 'description'])
