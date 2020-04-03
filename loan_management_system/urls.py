@@ -30,8 +30,12 @@ from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
     CalenderEventEmailViewSet
 )
-from loans.views import (LoanView, LoanCommentList, LoanCommentDetail,
-PrincipalOutstandingLoan, TotalOpenLoans, InterestOutstandingLoan, FullyPaidLoans)
+from loans.views import (
+    LoanView, LoanCommentList, LoanCommentDetail,
+    PrincipalOutstandingLoan, TotalOpenLoans, 
+    InterestOutstandingLoan, FullyPaidLoans,
+    LoanRepaymentViewSet
+    )
 
 router = DefaultRouter()
 
@@ -46,6 +50,8 @@ router.register('calendar-logs', CalendarLogViewSet, 'calendar-logs')
 router.register('calendar-events-email', CalenderEventEmailViewSet, 'calendar-events-email')
 
 router.register('payroll', PayrollViewSet, 'payroll')
+
+router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
 
 
 urlpatterns = [

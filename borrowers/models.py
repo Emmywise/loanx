@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 from cloudinary.models import CloudinaryField
+from accounts.models import Profile
 import os
 # Create your models here.
 
@@ -30,7 +31,7 @@ class Borrower(models.Model):
         ('Pensioner', 'Pensioner'),
         ('Unemployed', 'Unemployed'),
     )
-    user = models.OneToOneField(User, on_delete=models.DO_NOTHING)
+    profile = models.OneToOneField(Profile, on_delete=models.DO_NOTHING)
     first_name = models.CharField(
         max_length=400)
     middle_name = models.CharField(
