@@ -159,18 +159,6 @@ class LoanOfficer(models.Model):
     phonenumber = models.CharField(max_length=128, blank=True, null=True)
 
 
-class LoanRepaymentMethod(models.Model):
-    repayment_mode = (
-        ("Cash", "Cash"),
-        ("Cheque", "Cheque"),
-        ("Wire Transfer", "Wire Transfer"),
-        ("Online Transfer", "Online Transfer"),
-        ("PayPal", "PayPal"),
-    )
-    mode = models.CharField(choices=repayment_mode,
-                            max_length=400, blank=True, null=True)
-
-
 class LoanRepayment(models.Model):
     time_to_post = (
         ("12:00am-3:59am", "12:00am-3:59am"),
@@ -197,8 +185,8 @@ class LoanRepayment(models.Model):
         ("manual", "manual"),
         ("card", "card"),
     )
-    loan_schedule = models.OneToOneField(
-        'LoanScheduler', on_delete=models.DO_NOTHING)
+    loan = models.ForeignKey(
+        'Loan', on_delete=models.DO_NOTHING)
     repayment_cycle_types = (
         ("daily", "daily"),
         ("weekly", "weekly"),
@@ -211,6 +199,15 @@ class LoanRepayment(models.Model):
         ("annually", "annually"),
         ("lump sum", "lump sum"),
     )
+    repayment_mode_choices = (
+        ("Cash", "Cash"),
+        ("Cheque", "Cheque"),
+        ("Wire Transfer", "Wire Transfer"),
+        ("Online Transfer", "Online Transfer"),
+        ("PayPal", "PayPal"),
+    )
+    repayment_mode = models.CharField(choices=repayment_mode_choices,
+                            max_length=400, blank=True, null=True)
     amount = models.DecimalField(max_digits=60, decimal_places=2)
     date = models.DateField()
     payment_type = models.CharField(
@@ -220,8 +217,6 @@ class LoanRepayment(models.Model):
         max_length=60, choices=charge_interest_choices)
     repayment_cycle = models.CharField(choices=repayment_cycle_types,
                                        max_length=400, blank=True, null=True)
-    repayment_mode = models.ForeignKey(
-        LoanRepaymentMethod, on_delete=models.DO_NOTHING)
     proof_of_payment = models.FileField(validators=[validate_file_extension],
                                         upload_to="repayments", blank=True, null=True)
 

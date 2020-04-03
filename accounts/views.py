@@ -18,6 +18,8 @@ from .serializers import (
     BranchHolidaySerializer, BranchAdminSerializer,
     UserProfileSerializer
 )
+from loan_management_system import permissions as perms
+
 
 # Create your views here.
 
@@ -114,6 +116,7 @@ class BranchAdminViewSet(viewsets.ModelViewSet):
 
 class UserProfileViewSet(viewsets.ModelViewSet):
 
+    permission_classes = (perms.IsOwnerOrStaffOrAdmin,)
     serializer_class = UserProfileSerializer
 
     def get_queryset(self):

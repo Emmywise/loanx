@@ -252,3 +252,15 @@ class FeesOutstandingLoan(APIView):
         #print(principal_outstanding)
         #serializer = LoanSerializer(principal_outstanding, many=True)
         return Response(output)
+
+
+class LoanRepaymentViewSet(ModelViewSet):
+    serializer_class = LoanRepaymentSerializer
+
+    def get_queryset(self):
+        queryset = LoanRepayment.objects.all()
+        borrower = self.request.GET.get('borrower')
+        if borrower:
+            queryset.filter(loan_schedule__loan__borrower__pk=borrower)
+
+        return queryset
