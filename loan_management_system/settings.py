@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'django_celery_beat',
     'accounts',
     'commons',
     'loans',
@@ -51,7 +52,6 @@ INSTALLED_APPS = [
     'staffs',
     'borrowers',
     'reports',
-    'django_celery_beat',
     'cloudinary',
 ]
 
@@ -165,9 +165,8 @@ EMAIL_HOST_PASSWORD = '67fb1ed70579d6'
 EMAIL_PORT = '2525'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672/'
-
-#CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_BROKER_URL = 'amqp://localhost'
+#CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
 
 CELERY_TIMEZONE = 'Asia/Kolkata'
 

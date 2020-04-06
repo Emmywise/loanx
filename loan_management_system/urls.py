@@ -36,8 +36,12 @@ from loans.views import (
     InterestOutstandingLoan, FullyPaidLoans,
     LoanRepaymentViewSet, LoanCollateralViewSet,
     LoanGuarantorViewSet, GuarantorFileViewSet,
-    RunBvnCheck, GetLoanScore
+    RunBvnCheck, GetLoanScore,
+    PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
+    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers
     )
+from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus
+
 
 router = DefaultRouter()
 
@@ -62,7 +66,6 @@ router.register('loan-guarantor-file', GuarantorFileViewSet, 'loan-guarantor-fil
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-
     path('api-token-auth/', obtain_jwt_token),
     path('api-verify-auth/', verify_jwt_token),
     path('api/resend-activation-token/', ResendActivationToken.as_view()),
@@ -77,9 +80,21 @@ urlpatterns = [
     path('loans/', LoanView.as_view()) ,
     path('principal_outstanding_loan/', PrincipalOutstandingLoan.as_view()),
     path('total_open_loan/', TotalOpenLoans.as_view()),
+    path('loan_comments/', LoanCommentList.as_view()),
+    path('loan_comments/<int:pk>', LoanCommentDetail.as_view()),
+    path('loan_officers/', LoanOfficerList.as_view()),
+    path('loan_officers/<int:pk>', LoanOfficerDetail.as_view()),
     path('interest_outstanding_loan/', InterestOutstandingLoan.as_view()),
     path('fully_paid_loan/', FullyPaidLoans.as_view()),
     path('api/bvn_check/', RunBvnCheck.as_view()),
     path('api/get_loan_score/', GetLoanScore.as_view()),
+    path('search_loan_type/', SearchLoanType.as_view()),
+    path('search_borrower_group', SearchBorrowerGroup),
+    path('individual_open_loans', IndividualOpenLoans),
+    path('borrowers_savings/', BorrowersSavings),
+    path('search_by_working_status/<str:status>',SearchByWorkingStatus),
+    path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),
+
+
 ]
 

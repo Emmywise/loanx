@@ -17,9 +17,7 @@ class LoanCommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = LoanComment
 
-
-class LoanRepaymentSerializer(serializers.ModelSerializer):
-
+class LoanOfficerSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = LoanRepayment
@@ -51,3 +49,12 @@ class LoanGuarantorSerializer(serializers.ModelSerializer):
         for file in obj.guarantorfile_set.all():
             guarantor_files.append(GuarantorFileSerializer(file).data)
         return guarantor_files
+        model = LoanOfficer
+
+
+class LoanRepaymentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = LoanRepayment
+

@@ -3,9 +3,20 @@ from celery import shared_task
 import time
 import string
 
+from .send_sms import SendSMSAPI
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
 
+@shared_task
+def send_sms():
+    return SendSMSAPI()
+    
+
+@shared_task
+def send_mail(purpose, sender, recipient):
+    mail_instance = SendEmail()
+    #mail_instance.send_mail(invite new borrowers, )
+    return mail_instance()
 
 def print_random_string():
     # time.sleep(1)
