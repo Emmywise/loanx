@@ -12,6 +12,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from .serializers import *
 from .models import *
 from accounts.models import (
@@ -38,9 +39,26 @@ class LoanView(APIView):
     def get(self, request):
         ref = request.GET.get("ref")
         loan_status = request.GET.get("status")
+        borrower = request.GET.get("borrower")
         if ref:
             try:
-                loan = Loan.objects.get(ref_id=ref)
+                loan = Loan.objects.get(pk=ref)
+                serializer = LoanSerializer(loan)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except ObjectDoesNotExist:
+                return Response({"message": "loan does not exist"},
+                                status=status.HTTP_404_NOT_FOUND)
+        if loan_status:
+            try:
+                loan = Loan.objects.get(status=loan_status)
+                serializer = LoanSerializer(loan)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except ObjectDoesNotExist:
+                return Response({"message": "loan does not exist"},
+                                status=status.HTTP_404_NOT_FOUND)
+        if borrower:
+            try:
+                loan = Loan.objects.get(borrower=borrower)
                 serializer = LoanSerializer(loan)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except ObjectDoesNotExist:
@@ -49,11 +67,11 @@ class LoanView(APIView):
         q = Loan.objects.all()
         serializer = LoanSerializer(q, many=True)
         return Response(serializer.data)
-        q = Loan.objects.all()
-        if loan_status:
-            q = q.filter(status=loan_status)
-        response = [LoanSerializer(loan).data for loan in q]
-        return Response(response, status=status.HTTP_200_OK)
+        # q = Loan.objects.all()
+        # if loan_status:
+        #     q = q.filter(status=loan_status)
+        # response = [LoanSerializer(loan).data for loan in q]
+        # return Response(response, status=status.HTTP_200_OK)
 
     def patch(self, request):
         # approved/decline loan by admin/staff
@@ -223,10 +241,48 @@ class InterestOutstandingLoan(APIView):
         return Response(output)
 
 
+#getting the loan by category
+class SearchLoanType(APIView):
+    def get(self, request, pk=None):
+        loan_type = request.GET.get("loan_type")
+        #loans = LoanType.objects.filter(status = loan_type.name)[0]
+        category = LoanType.objects.get(name=loan_type)
+        loans = Loan.objects.filter(loan_type = category)
+        serializer = LoanSerializer(loans[0])
+        return Response(serializer.data)
+
+
+        
 class FullyPaidLoans(APIView):
     def get(self, request, pk=None):
         fully_paid = Loan.objects.filter(status = "fully paid")
         serializer = LoanSerializer(fully_paid, many=True)
+        return Response(serializer.data)
+
+
+class LoansByOfficers(APIView):
+    def get(self, request, pk=None):
+        print(".......")
+        print(".......")
+        print(pk)   
+        print(".......")
+        print(".......")     
+        loan_officer = LoanOfficer.objects.filter(pk = pk)
+        print(".......")
+        print(".......")
+        total = []
+        rez = []
+        loan_officer_loans = loan_officer[0].loan.all()
+        for loan_officer_loan in loan_officer_loans:
+            total.append(loan_officer_loan.pk)
+        for unit in total:
+            rez.append(Loan.objects.filter(pk = int(unit))[0])
+        print(rez)
+        # print(loan_officer[0].loan.all()[0].pk)   
+        # print(".......")
+        # print(".......")  
+        serializer = LoanSerializer(rez, many=True)         
+        #return Response(serializer.data)
         return Response(serializer.data)
 
 
@@ -254,13 +310,14 @@ class FeesOutstandingLoan(APIView):
         return Response(output)
 
 
-class LoanRepaymentViewSet(ModelViewSet):
-    serializer_class = LoanRepaymentSerializer
+# class LoanRepaymentViewSet(ModelViewSet):
+#     serializer_class = LoanRepaymentSerializer
 
-    def get_queryset(self):
-        queryset = LoanRepayment.objects.all()
-        borrower = self.request.GET.get('borrower')
-        if borrower:
-            queryset.filter(loan_schedule__loan__borrower__pk=borrower)
+#     def get_queryset(self):
+#         queryset = LoanRepayment.objects.all()
+#         borrower = self.request.GET.get('borrower')
+#         if borrower:
+#             queryset.filter(loan_schedule__loan__borrower__pk=borrower)
 
-        return queryset
+#         return queryset
+

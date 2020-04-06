@@ -30,18 +30,13 @@ from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
     CalenderEventEmailViewSet
 )
-<<<<<<< HEAD
-from loans.views import (LoanView, LoanCommentList, LoanCommentDetail,
-LoanOfficerList, LoanOfficerDetail, PrincipalOutstandingLoan, TotalOpenLoans, 
-InterestOutstandingLoan, FullyPaidLoans)
-=======
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
-    PrincipalOutstandingLoan, TotalOpenLoans, 
-    InterestOutstandingLoan, FullyPaidLoans,
-    LoanRepaymentViewSet
+    PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
+    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers
     )
->>>>>>> 5a310ee418f568dbd8cb38483d9804b8206152c6
+from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus
+
 
 router = DefaultRouter()
 
@@ -57,7 +52,6 @@ router.register('calendar-events-email', CalenderEventEmailViewSet, 'calendar-ev
 
 router.register('payroll', PayrollViewSet, 'payroll')
 
-router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
 
 
 urlpatterns = [
@@ -83,6 +77,12 @@ urlpatterns = [
     path('loan_officers/<int:pk>', LoanOfficerDetail.as_view()),
     path('interest_outstanding_loan/', InterestOutstandingLoan.as_view()),
     path('fully_paid_loan/', FullyPaidLoans.as_view()),
+    path('search_loan_type/', SearchLoanType.as_view()),
+    path('search_borrower_group', SearchBorrowerGroup),
+    path('individual_open_loans', IndividualOpenLoans),
+    path('borrowers_savings/', BorrowersSavings),
+    path('search_by_working_status/<str:status>',SearchByWorkingStatus),
+    path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),
 
 
 ]

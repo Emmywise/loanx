@@ -31,7 +31,7 @@ class Borrower(models.Model):
         ('Pensioner', 'Pensioner'),
         ('Unemployed', 'Unemployed'),
     )
-    profile = models.OneToOneField(Profile, on_delete=models.DO_NOTHING)
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(
         max_length=400)
     middle_name = models.CharField(

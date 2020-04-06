@@ -2,7 +2,9 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 import os
+import datetime
 from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save
 from borrowers.models import Borrower
 from accounts.models import Profile, Branch
 # Create your models here.
@@ -149,8 +151,6 @@ class Loan(models.Model):
     staff_permission_disbursed = models.BooleanField(default=True)
     staff_permission_accepted = models.BooleanField(default=False)
 
-    # def __str__(self):
-    #     return self.profile.user.username
 
 
 class LoanOfficer(models.Model):
