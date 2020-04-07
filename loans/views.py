@@ -369,6 +369,21 @@ class LoanGuarantorViewSet(ModelViewSet):
         return queryset
 
 
+class LoanDisbursementViewSet(ModelViewSet):
+    serializer_class = LoanDisbursementSerializer
+
+    def get_queryset(self):
+        queryset = LoanDisbursement.objects.all()
+        borrower = self.request.GET.get('borrower')
+        branch = self.request.GET.get('branch')
+        if branch:
+            queryset.filter(loan__branch__pk=branch)
+        if borrower:
+            queryset.filter(loan__borrower__pk=borrower)
+
+        return queryset
+
+
 class GuarantorFileViewSet(ModelViewSet):
     serializer_class = GuarantorFileSerializer
 

@@ -241,9 +241,33 @@ class LoanDisbursement(models.Model):
         ("Wire Transfer", "Wire Transfer"),
         ("Online Transfer", "Online Transfer")
     )
+    loan_interest_percentage_period_types = (
+        ('Days', 'Days'),
+        ('Weeks', 'Weeks'),
+        ('Months', 'Months'),
+        ('Years', 'Years'),
+    )
+    loan_duration_period_types = (
+        ('Days', 'Days'),
+        ('Weeks', 'Weeks'),
+        ('Months', 'Months'),
+        ('Years', 'Years'),
+    )
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
     disbursement_mode = models.CharField(
         choices=disbursement_mode_types, max_length=100)
+    amount = models.DecimalField(max_digits=100, decimal_places=2)
+    duration = models.PositiveIntegerField(blank=True, null=True)
+    loan_interest_percentage = models.CharField(
+        max_length=400, blank=True, null=True)
+    loan_interest_fixed_amount = models.CharField(
+        max_length=400, blank=True, null=True)
+    loan_interest_percentage_period = models.CharField(
+        choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
+    loan_duration = models.CharField(
+        max_length=400, blank=True, null=True)
+    loan_duration_period = models.CharField(choices=loan_duration_period_types,
+                                            max_length=400, blank=True, null=True)
 
 
 class LoanComment(models.Model):

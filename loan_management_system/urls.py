@@ -38,7 +38,8 @@ from loans.views import (
     LoanGuarantorViewSet, GuarantorFileViewSet,
     RunBvnCheck, GetLoanScore,
     PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
-    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers
+    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers,
+    LoanDisbursementViewSet
     )
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus
 
@@ -58,6 +59,7 @@ router.register('calendar-events-email', CalenderEventEmailViewSet, 'calendar-ev
 router.register('payroll', PayrollViewSet, 'payroll')
 
 router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
+router.register('loan-disbursement', LoanDisbursementViewSet, 'loan-disbursement')
 router.register('loan-collateral', LoanCollateralViewSet, 'loan-collateral')
 router.register('loan-guarantor', LoanGuarantorViewSet, 'loan-guarantor')
 router.register('loan-guarantor-file', GuarantorFileViewSet, 'loan-guarantor-file')

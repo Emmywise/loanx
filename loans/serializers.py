@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     Loan, LoanComment, LoanRepayment,
     LoanCollateral, LoanGuarantor,
-    GuarantorFile
+    GuarantorFile, LoanDisbursement
 )
 
 
@@ -49,7 +49,6 @@ class LoanGuarantorSerializer(serializers.ModelSerializer):
         for file in obj.guarantorfile_set.all():
             guarantor_files.append(GuarantorFileSerializer(file).data)
         return guarantor_files
-        model = LoanOfficer
 
 
 class LoanRepaymentSerializer(serializers.ModelSerializer):
@@ -58,3 +57,9 @@ class LoanRepaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = LoanRepayment
 
+
+class LoanDisbursementSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = LoanDisbursement
