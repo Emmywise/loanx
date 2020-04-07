@@ -6,6 +6,7 @@ from accounts.models import Profile
 import os
 # Create your models here.
 
+
 class Borrower(models.Model):
     gender_choices = (
         ('Male', 'Male'),
@@ -13,11 +14,11 @@ class Borrower(models.Model):
         ('Prefer not to say', 'Prefer not to say'),
     )
     title_choices = (
-        ('Mr.', 'Mr.'),
-        ('Mrs.', 'Mrs.'),
+        ('Mr', 'Mr'),
+        ('Mrs', 'Mrs'),
         ('Miss', 'Miss'),
-        ('Dr.', 'Dr.'),
-        ('Ms.', 'Ms.'),
+        ('Dr', 'Dr'),
+        ('Ms', 'Ms'),
         ('Rev', 'Rev'),
     )
     working_status_choices = (
@@ -65,6 +66,7 @@ class Borrower(models.Model):
     description = models.CharField(
         max_length=400)
     is_activated = models.BooleanField(default=False)
+    loan_score = models.PositiveIntegerField(blank=True, null=True)
 
 
 class BorrowerGroup(models.Model):

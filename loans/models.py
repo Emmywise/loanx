@@ -140,7 +140,6 @@ class Loan(models.Model):
     # ref_id = models.CharField(max_length=100, blank=True, null=True)
     # authorization_code = models.CharField(
     #     max_length=100, blank=True, null=True)
-    loan_score = models.PositiveIntegerField(blank=True, null=True)
     # authorization_code = models.CharField(
     #     max_length=100, blank=True, null=True)
     # email = models.EmailField(max_length=120, blank=True, null=True)
@@ -150,6 +149,7 @@ class Loan(models.Model):
         max_digits=10, decimal_places=2, blank=True, null=True)
     staff_permission_disbursed = models.BooleanField(default=True)
     staff_permission_accepted = models.BooleanField(default=False)
+    bvn = models.CharField(max_length=20, blank=True, null=True)
 
 
 
@@ -241,9 +241,33 @@ class LoanDisbursement(models.Model):
         ("Wire Transfer", "Wire Transfer"),
         ("Online Transfer", "Online Transfer")
     )
+    loan_interest_percentage_period_types = (
+        ('Days', 'Days'),
+        ('Weeks', 'Weeks'),
+        ('Months', 'Months'),
+        ('Years', 'Years'),
+    )
+    loan_duration_period_types = (
+        ('Days', 'Days'),
+        ('Weeks', 'Weeks'),
+        ('Months', 'Months'),
+        ('Years', 'Years'),
+    )
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
     disbursement_mode = models.CharField(
         choices=disbursement_mode_types, max_length=100)
+    amount = models.DecimalField(max_digits=100, decimal_places=2)
+    duration = models.PositiveIntegerField(blank=True, null=True)
+    loan_interest_percentage = models.CharField(
+        max_length=400, blank=True, null=True)
+    loan_interest_fixed_amount = models.CharField(
+        max_length=400, blank=True, null=True)
+    loan_interest_percentage_period = models.CharField(
+        choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
+    loan_duration = models.CharField(
+        max_length=400, blank=True, null=True)
+    loan_duration_period = models.CharField(choices=loan_duration_period_types,
+                                            max_length=400, blank=True, null=True)
 
 
 class LoanComment(models.Model):
@@ -311,6 +335,7 @@ class LoanAttachment(models.Model):
 
 
 class LoanCollateral(models.Model):
+<<<<<<< HEAD
     loan_type_choices = (
         ('Automobiles', 'Automobiles'),
         ('Electronic Items', 'Electronic Items'),
@@ -321,10 +346,12 @@ class LoanCollateral(models.Model):
         ('Valuables and Collectibles', 'Valuables and Collectibles'),
         ('Others', 'Others')
     )
+=======
+>>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     current_status = (
         ('Deposited into branch', 'Deposited into branch'),
         ('Collateral with borrower', 'Collateral with borrower'),
-        ('Returned to borrower', 'Returned to borrowerI'),
+        ('Returned to borrower', 'Returned to borrower'),
         ('Repossession initiated', 'Repossession initiated'),
         ('under auction', 'under auction'),
         ('sold', 'sold'),
@@ -335,8 +362,23 @@ class LoanCollateral(models.Model):
         ('Good', 'Good'),
         ('Fair', 'Fair'),
         ('Damaged', 'Damaged'),)
+<<<<<<< HEAD
     collateral_type = models.CharField(
         choices=loan_type_choices, max_length=100)
+=======
+    collateral_type_choice = (
+        ('Automobiles', 'Automobiles'),
+        ('Electronic Items', 'Electronic Items'),
+        ('Insurance Policies', 'Insurance Policies'),
+        ('Investments', 'Investments'),
+        ('Machineries and Equipments', 'Machineries and Equipments'),
+        ('Real Estate', 'Real Estate'),
+        ('Valuables and Collectibles', 'Valuables and Collectibles'),
+        ('Others', 'Others')
+    )
+    collateral_type = models.CharField(
+        choices=collateral_type_choice, max_length=100)
+>>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
     value = models.DecimalField(max_digits=20, decimal_places=2)
@@ -377,3 +419,50 @@ class LoanScheduler(models.Model):
     date = models.DateTimeField()
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     status = models.CharField(max_length=30, choices=loan_scheduler_choices)
+
+
+class LoanGuarantor(models.Model):
+    title_choices = (
+        ('Mr.', 'Mr.'),
+        ('Mrs.', 'Mrs.'),
+        ('Miss', 'Miss'),
+        ('Ms.', 'Ms.'),
+        ('Dr.', 'Dr.'),
+        ('Prof.', 'Prof.'),
+        ('Rev.', 'Rev.'),
+    )
+    working_status_choices = (
+        ('Employee', 'Employee'),
+        ('Government Employee', 'Government Employee'),
+        ('Private Sector Employee', 'Private Sector Employee'),
+        ('Owner', 'Owner'),
+        ('Student', 'Student'),
+        ('Overseas Worker', 'Overseas Worker'),
+        ('Pensioner', 'Pensioner'),
+        ('Unemployed', 'Unemployed'),
+    )
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
+    country = models.CharField(max_length=200)
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
+    business_name = models.CharField(max_length=400, blank=True, null=True)
+    gender = models.CharField(max_length=200,
+                              choices=(('Male', 'Male'), ('Female', 'Female')))
+    title = models.CharField(max_length=5, choices=title_choices)
+    mobile = models.CharField(max_length=20)
+    email = models.EmailField(max_length=200)
+    date_of_birth = models.DateField()
+    address = models.CharField(max_length=400)
+    city = models.CharField(max_length=400)
+    state = models.CharField(max_length=400)
+    zip_code = models.CharField(max_length=10, blank=True, null=True)
+    landline_phone = models.CharField(max_length=20, blank=True, null=True)
+    working_status = models.CharField(max_length=100, choices=working_status_choices)
+    photo = models.ImageField(upload_to='guarantor', blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+
+class GuarantorFile(models.Model):
+    guarantor = models.ForeignKey(LoanGuarantor, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='guarantor_files')
+

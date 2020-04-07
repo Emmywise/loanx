@@ -32,9 +32,19 @@ from reports.views import (
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
+    PrincipalOutstandingLoan, TotalOpenLoans, 
+    InterestOutstandingLoan, FullyPaidLoans,
+    LoanRepaymentViewSet, LoanCollateralViewSet,
+    LoanGuarantorViewSet, GuarantorFileViewSet,
+    RunBvnCheck, GetLoanScore,
     PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
+<<<<<<< HEAD
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail
+=======
+    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers,
+    LoanDisbursementViewSet
+>>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     )
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 
@@ -53,6 +63,11 @@ router.register('calendar-events-email', CalenderEventEmailViewSet, 'calendar-ev
 
 router.register('payroll', PayrollViewSet, 'payroll')
 
+router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
+router.register('loan-disbursement', LoanDisbursementViewSet, 'loan-disbursement')
+router.register('loan-collateral', LoanCollateralViewSet, 'loan-collateral')
+router.register('loan-guarantor', LoanGuarantorViewSet, 'loan-guarantor')
+router.register('loan-guarantor-file', GuarantorFileViewSet, 'loan-guarantor-file')
 
 
 urlpatterns = [
@@ -78,6 +93,8 @@ urlpatterns = [
     path('loan_officers/<int:pk>', LoanOfficerDetail.as_view()),
     path('interest_outstanding_loan/', InterestOutstandingLoan.as_view()),
     path('fully_paid_loan/', FullyPaidLoans.as_view()),
+    path('api/bvn_check/', RunBvnCheck.as_view()),
+    path('api/get_loan_score/', GetLoanScore.as_view()),
     path('search_loan_type/', SearchLoanType.as_view()),
     path('search_borrower_group', SearchBorrowerGroup),
     path('individual_open_loans', IndividualOpenLoans),

@@ -8,7 +8,7 @@ class BorrowerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class BorrowerGroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BorrowerGroup
-        fields = '__all__'
+# class BorrowerGroupSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = BorrowerGroup
+#         fields = '__all__'
