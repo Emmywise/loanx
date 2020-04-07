@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.parsers import FileUploadParser
 from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.auth.models import User
@@ -88,10 +89,15 @@ class LoanView(APIView):
         try:
             loan = Loan.objects.get(id=loan_id)
             if(loan.status == stat):
-                loan.save()
+                loan.save(commit=False)
             else:
                 return Response([{"status": "invalid loan status"}],
                                 status=status.HTTP_400_BAD_REQUEST)
+            loan.status = "restructured"     
+            serializer = LoanSerializer(loan, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
             return Response({"message": "loan has been updated successful"})
         except ObjectDoesNotExist as error:
             return Response({"message": "loan with the id does not exist"},
@@ -117,6 +123,24 @@ class LoanCommentList(APIView):
         loan_comment = LoanComment.objects.filter(loan=int(loan_for))
         serializer = LoanCommentSerializer(loan_comment, many=True)
         return Response(serializer.data)
+
+
+class LoanFeeList(APIView):
+    def post(self, request):
+        # initialize a loan by customer
+        serializer = LoanFeeSerializer(data=request.data)
+        if serializer.is_valid():
+            # save loan and send loan application email.
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, pk=None):
+        loan_for = request.GET['loan']
+        loan_fee = LoanFee.objects.filter(loan=int(loan_for))
+        serializer = LoanFeeSerializer(loan_fee, many=True)
+        return Response(serializer.data)
+
 
 class LoanCommentDetail(APIView):
     """
@@ -241,6 +265,30 @@ class InterestOutstandingLoan(APIView):
         return Response(output)
 
 
+# class PenaltyOutstandingLoan(APIView):
+#     def get(self, request, pk=None):
+#         penalty_outstanding = Loan.objects.filter(penalty_rate__gte=0)
+#         output = []
+#         for unit in principal_outstanding:
+#             if(unit.repayment_amount == None):
+#                 unit.repayment_amount = 0.00
+#             if (unit.amount_paid == None):
+#                 unit.amount_paid = 0
+#             interest_amount = int(unit.repayment_amount) - int(unit.principal_amount)
+#             if int(unit.amount_paid) > int(unit.principal_amount):
+#                 interest_amount = interest_amount - int(unit.amount_paid) - int(unit.principal_amount)
+#             if (unit.repayment_amount < unit.principal_amount):
+#                 rez = {'loan_id':unit.pk, 'released':unit.loan_release_date, 'maturity': unit.maturity_date, 'principal': unit.principal_amount,
+#                 'principal_paid': unit.amount_paid, 'interest_oustanding': str(interest_amount), 'principal_due_till_today': unit.remaining_balance,
+#                 'status': unit.status, 'branch':str(unit.branch.pk), 'borrower':str(unit.borrower.pk)}
+#                 output.append(rez)
+#             else:
+#                 pass
+#         #print(principal_outstanding)
+#         #serializer = LoanSerializer(principal_outstanding, many=True)
+#         return Response(output)
+
+
 #getting the loan by category
 class SearchLoanType(APIView):
     def get(self, request, pk=None):
@@ -261,15 +309,8 @@ class FullyPaidLoans(APIView):
 
 
 class LoansByOfficers(APIView):
-    def get(self, request, pk=None):
-        print(".......")
-        print(".......")
-        print(pk)   
-        print(".......")
-        print(".......")     
+    def get(self, request, pk=None):  
         loan_officer = LoanOfficer.objects.filter(pk = pk)
-        print(".......")
-        print(".......")
         total = []
         rez = []
         loan_officer_loans = loan_officer[0].loan.all()
@@ -321,3 +362,92 @@ class FeesOutstandingLoan(APIView):
 
 #         return queryset
 
+class LoanCollateralList(APIView):
+    parser_class = (FileUploadParser,)
+    def post(self, request):
+        # initialize a loan by customer
+        serializer = LoanCollateralSerializer(data=request.data)
+        if serializer.is_valid():
+            # save loan and send loan application email.
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, pk=None):
+        loan_collateral = LoanCollateral.objects.all()
+        serializer = LoanCollateralSerializer(loan_collateral, many=True)
+        return Response(serializer.data)
+
+class LoanCollateralDetail(APIView):
+    """
+    Retrieve, update or delete a snippet instance.
+    """
+    def get_object(self, pk):
+        try:
+            return LoanCollateral.objects.get(pk=pk)
+        except LoanCollateral.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        loan_collateral = self.get_object(pk)
+        serializer = LoanCollateralSerializer(loan_collateral)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        loan_collateral = self.get_object(pk)
+        serializer = LoanCollateralSerializer(loan_collateral, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        loan_collateral = self.get_object(pk)
+        loan_collateral.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+class LoanAttachmentList(APIView):
+    parser_class = (FileUploadParser,)
+    def post(self, request):
+        # initialize a loan by customer
+        serializer = LoanAttachmentSerializer(data=request.data)
+        if serializer.is_valid():
+            # save loan and send loan application email.
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, pk=None):
+        loan_attachment = LoanAttachment.objects.all()
+        serializer = LoanAttachmentSerializer(loan_attachment, many=True)
+        return Response(serializer.data)
+
+class LoanAttachmentDetail(APIView):
+    """
+    Retrieve, update or delete a snippet instance.
+    """
+    def get_object(self, pk):
+        try:
+            return LoanAttachment.objects.get(pk=pk)
+        except LoanAttachment.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        loan_attachment = self.get_object(pk)
+        serializer = LoanAttachmentSerializer(loan_attachment)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        loan_attachment = self.get_object(pk)
+        serializer = LoanAttachmentSerializer(loan_attachment, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        loan_attachment = self.get_object(pk)
+        loan_attachment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

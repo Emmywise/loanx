@@ -33,9 +33,10 @@ from reports.views import (
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
     PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
-    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers
+    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
+    LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail
     )
-from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus
+from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 
 
 router = DefaultRouter()
@@ -80,9 +81,16 @@ urlpatterns = [
     path('search_loan_type/', SearchLoanType.as_view()),
     path('search_borrower_group', SearchBorrowerGroup),
     path('individual_open_loans', IndividualOpenLoans),
+    path('individual_repayments', IndividualRepayments),
     path('borrowers_savings/', BorrowersSavings),
     path('search_by_working_status/<str:status>',SearchByWorkingStatus),
     path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),
+    path('loan_fees/', LoanFeeList.as_view()),
+    path('loan_collateral/', LoanCollateralList.as_view()),
+    path('loan_collateral/<int:pk>', LoanCollateralDetail.as_view()),
+    path('loan_attachment/', LoanAttachmentList.as_view()),
+    path('loan_attachment/<int:pk>', LoanAttachmentDetail.as_view())
+
 
 
 ]

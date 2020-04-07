@@ -8,6 +8,7 @@ from rest_framework import status
 
 from .models import *
 from loans.models import Loan
+from loans.serializers import LoanSerializer
 from .serializers import *
 from savings_investments.models import SavingsAccount
 from savings_investments.serializers import SavingsAccountSerializer
@@ -135,24 +136,45 @@ def IndividualOpenLoans(request):
         group_members = borrower_group.member.all()
         for g in group_members:
             member_loan = []
-            print(".......")
-            print(".......")  
-            print(g)
-            print(".......")
-            print(".......")  
-            member_loan = Loan.objects.filter(borrower=g.pk)
+            member_loan = Loan.objects.filter(borrower=g.pk, status="current")
             #print(member_loan[0])
-            for unit in member_loan:
-                member_loan.append(unit[0].pk)    
-            print(".......")
-            print(".......")  
+            if(len(member_loan)>0):
+                for unit in member_loan:               
+                    members_loan.append(unit)  
+            else:
+                return Response("No response")  
             #print(unit.member)
             #members_loan.append(unit.member)
         #print(members_loan)
         # members = borrower_group.member
         # print(members)
-        serializer = BorrowerGroupSerializer(members_loan, many=True)
-        return Response(serializer.data)
+        serializer = LoanSerializer(members_loan, many=True)
+        return Response({unit.borrower.id: serializer.data})
+
+@api_view(['GET'])
+def IndividualRepayments(request):
+    id = request.GET.get("id")
+    # get all restaurants
+    if request.method == 'GET':
+        members_loan = []
+        borrower_group = BorrowerGroup.objects.get(pk=int(id))
+        group_members = borrower_group.member.all()
+        for g in group_members:
+            member_loan = []
+            member_loan = Loan.objects.filter(borrower=g.pk, status="fully paid")
+            #print(member_loan[0])
+            if(len(member_loan)>0):
+                for unit in member_loan:               
+                    members_loan.append(unit)  
+            else:
+                return Response("No response")  
+            #print(unit.member)
+            #members_loan.append(unit.member)
+        #print(members_loan)
+        # members = borrower_group.member
+        # print(members)
+        serializer = LoanSerializer(members_loan, many=True)
+        return Response({unit.borrower.id: serializer.data})
 
 
 @api_view(['GET'])

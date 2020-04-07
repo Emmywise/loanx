@@ -300,7 +300,7 @@ class LoanFee(models.Model):
         choices=apply_loan_fee_choices, max_length=100)
 
 
-class LoanAttachments(models.Model):
+class LoanAttachment(models.Model):
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
     attachment = models.FileField(
@@ -310,8 +310,8 @@ class LoanAttachments(models.Model):
         return self.name
 
 
-class LoanCollateralTypes(models.Model):
-    loan_type_choice = (
+class LoanCollateral(models.Model):
+    loan_type_choices = (
         ('Automobiles', 'Automobiles'),
         ('Electronic Items', 'Electronic Items'),
         ('Insurance Policies', 'Insurance Policies'),
@@ -321,11 +321,6 @@ class LoanCollateralTypes(models.Model):
         ('Valuables and Collectibles', 'Valuables and Collectibles'),
         ('Others', 'Others')
     )
-    division = models.CharField(
-        choices=loan_type_choice, max_length=100)
-
-
-class LoanCollateral(models.Model):
     current_status = (
         ('Deposited into branch', 'Deposited into branch'),
         ('Collateral with borrower', 'Collateral with borrower'),
@@ -340,8 +335,8 @@ class LoanCollateral(models.Model):
         ('Good', 'Good'),
         ('Fair', 'Fair'),
         ('Damaged', 'Damaged'),)
-    collateral_type = models.ForeignKey(
-        LoanCollateralTypes, on_delete=models.DO_NOTHING)
+    collateral_type = models.CharField(
+        choices=loan_type_choices, max_length=100)
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
     value = models.DecimalField(max_digits=20, decimal_places=2)
