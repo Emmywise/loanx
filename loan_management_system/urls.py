@@ -36,15 +36,11 @@ from loans.views import (
     InterestOutstandingLoan, FullyPaidLoans,
     LoanRepaymentViewSet, LoanCollateralViewSet,
     LoanGuarantorViewSet, GuarantorFileViewSet,
-    RunBvnCheck, GetLoanScore,
+    RunBvnCheck, GetLoanScore,LoanDisbursementViewSet,
     PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
-<<<<<<< HEAD
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
-    LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail
-=======
-    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers,
-    LoanDisbursementViewSet
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
+    LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
+    DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays
     )
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 
@@ -106,9 +102,12 @@ urlpatterns = [
     path('loan_collateral/', LoanCollateralList.as_view()),
     path('loan_collateral/<int:pk>', LoanCollateralDetail.as_view()),
     path('loan_attachment/', LoanAttachmentList.as_view()),
-    path('loan_attachment/<int:pk>', LoanAttachmentDetail.as_view())
-
-
+    path('loan_attachment/<int:pk>', LoanAttachmentDetail.as_view()),
+    path('early_settled_loans/', EarlySettledLoans.as_view()),
+    path('due_loans_between/',  DueLoansBetween.as_view()),
+    path('due_loans_no_payment/', DueLoansNoPayment.as_view()),
+    path('due_loans_part_payment/', DueLoansPartPayment.as_view()),
+    path('due_loans_by_days/', GetDueLoansByDays.as_view()),
 
 ]
 

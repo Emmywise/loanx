@@ -1,14 +1,6 @@
 from rest_framework import serializers
-<<<<<<< HEAD
-from .models import Loan, LoanComment, LoanOfficer, LoanFee, LoanCollateral, LoanAttachment
-=======
-from .models import (
-    Loan, LoanComment, LoanRepayment,
-    LoanCollateral, LoanGuarantor,
-    GuarantorFile, LoanDisbursement
-)
-
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
+from .models import (Loan, LoanComment, LoanOfficer, LoanFee,
+LoanCollateral, LoanAttachment, LoanRepayment, GuarantorFile, LoanGuarantor, LoanDisbursement)
 
 class LoanSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,7 +26,6 @@ class LoanCollateralSerializer(serializers.ModelSerializer):
         model = LoanCollateral
 
 
-<<<<<<< HEAD
 class LoanFeeSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
@@ -51,13 +42,11 @@ class LoanAttachmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = LoanAttachment
 # class LoanRepaymentSerializer(serializers.ModelSerializer):
-=======
 class GuarantorFileSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
         model = GuarantorFile
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
 
 
 class LoanGuarantorSerializer(serializers.ModelSerializer):

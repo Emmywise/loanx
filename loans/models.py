@@ -128,11 +128,11 @@ class Loan(models.Model):
     interest_start_date = models.DateField(blank=True, null=True)
 
     maturity_date = models.DateField(blank=True, null=True)
-    repayment_amount = models.CharField(
+    repayment_amount = models.IntegerField(
         max_length=400, blank=True, null=True)
-    amount_paid = models.CharField(
+    amount_paid = models.IntegerField(
         max_length=400, blank=True, null=True)
-    remaining_balance = models.CharField(
+    remaining_balance = models.IntegerField(
         max_length=400, blank=True, null=True)
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
@@ -154,7 +154,7 @@ class Loan(models.Model):
 
 
 class LoanOfficer(models.Model):
-    loan = models.ManyToManyField(Loan)
+    loan = models.ManyToManyField(Loan, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, null=True)
     phonenumber = models.CharField(max_length=128, blank=True, null=True)
 
@@ -335,7 +335,6 @@ class LoanAttachment(models.Model):
 
 
 class LoanCollateral(models.Model):
-<<<<<<< HEAD
     loan_type_choices = (
         ('Automobiles', 'Automobiles'),
         ('Electronic Items', 'Electronic Items'),
@@ -346,8 +345,6 @@ class LoanCollateral(models.Model):
         ('Valuables and Collectibles', 'Valuables and Collectibles'),
         ('Others', 'Others')
     )
-=======
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     current_status = (
         ('Deposited into branch', 'Deposited into branch'),
         ('Collateral with borrower', 'Collateral with borrower'),
@@ -362,10 +359,8 @@ class LoanCollateral(models.Model):
         ('Good', 'Good'),
         ('Fair', 'Fair'),
         ('Damaged', 'Damaged'),)
-<<<<<<< HEAD
     collateral_type = models.CharField(
         choices=loan_type_choices, max_length=100)
-=======
     collateral_type_choice = (
         ('Automobiles', 'Automobiles'),
         ('Electronic Items', 'Electronic Items'),
@@ -378,7 +373,6 @@ class LoanCollateral(models.Model):
     )
     collateral_type = models.CharField(
         choices=collateral_type_choice, max_length=100)
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
     value = models.DecimalField(max_digits=20, decimal_places=2)
