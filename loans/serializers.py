@@ -3,6 +3,9 @@ from .models import (Loan, LoanComment, LoanOfficer, LoanFee,
 LoanCollateral, LoanAttachment, LoanRepayment, GuarantorFile, LoanGuarantor, LoanDisbursement)
 
 class LoanSerializer(serializers.ModelSerializer):
+    remaining_balance = serializers.ReadOnlyField(source="self.get_balance")
+    released = serializers.ReadOnlyField(source="self.released")
+    maturity = serializers.ReadOnlyField(source="self.maturity")
     class Meta:
         fields = '__all__'
         model = Loan

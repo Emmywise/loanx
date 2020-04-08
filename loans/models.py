@@ -104,7 +104,7 @@ class Loan(models.Model):
     borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
-    duration = models.PositiveIntegerField(default=1)
+    duration = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=30, choices=status_choices, default='pending')
     request_date = models.DateField(auto_now=True)
@@ -129,11 +129,11 @@ class Loan(models.Model):
 
     maturity_date = models.DateField(blank=True, null=True)
     repayment_amount = models.IntegerField(
-        max_length=400, blank=True, null=True)
+        max_length=400)
     amount_paid = models.IntegerField(
-        max_length=400, blank=True, null=True)
+        max_length=400)
     remaining_balance = models.IntegerField(
-        max_length=400, blank=True, null=True)
+        max_length=400)
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
     maturity = models.BooleanField(default=False)
@@ -151,6 +151,14 @@ class Loan(models.Model):
     staff_permission_accepted = models.BooleanField(default=False)
     bvn = models.CharField(max_length=20, blank=True, null=True)
 
+    def get_balance(self):
+        return self.repayment_amount - self.amount_paid
+
+    def released(self):
+        return self.status == "current"
+
+    def maturity(self):
+        return self.maturity_date <= datetime.date.today()
 
 
 class LoanOfficer(models.Model):
