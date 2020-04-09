@@ -91,8 +91,8 @@ class LoanView(APIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             loan = Loan.objects.get(id=loan_id)
-            if(loan.status == stat):
-                loan.save(commit=False)
+            if loan.status == stat:
+                loan.save()
             else:
                 return Response([{"status": "invalid loan status"}],
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -618,7 +618,7 @@ class LoanAttachmentDetail(APIView):
 
 
 class ApproveOrDeclineLoan(APIView):
-
+    
     def post(self, request):
         loan = request.data.get('loan')
         loan_status = request.data.get('status')
