@@ -91,13 +91,8 @@ class LoanView(APIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             loan = Loan.objects.get(id=loan_id)
-<<<<<<< HEAD
-            if loan.status == stat:
-                loan.save()
-=======
             if(loan.status == stat):
                 loan.save(commit=False)
->>>>>>> 8aa1213555ff7da54a1241b7bf168519e88d3c3b
             else:
                 return Response([{"status": "invalid loan status"}],
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -622,7 +617,6 @@ class LoanAttachmentDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-<<<<<<< HEAD
 class ApproveOrDeclineLoan(APIView):
 
     def post(self, request):
@@ -645,7 +639,7 @@ class ApproveOrDeclineLoan(APIView):
                 default_fixed_amount = float(default_fixed_amount)
             duration = loan_obj.duration
             loan_fees = loan_obj.loanfee_set.all()
-            total_repayment_amount = float(loan_obj.amount)
+            total_repayment_amount = float(loan_obj.principal_amount)
             if (not default_fixed_amount) and (not overridden_interest_rate):
                 total_repayment_amount += float(default_interest_rate) * total_repayment_amount
             if overridden_interest_rate and (not default_fixed_amount):
@@ -656,6 +650,7 @@ class ApproveOrDeclineLoan(APIView):
                 total_repayment_amount += float(loan_fee.amount)
             loan_obj.repayment_amount = total_repayment_amount
             loan_obj.remaining_balance = total_repayment_amount
+            loan_obj.status = loan_status
             loan_obj.save()
             total_repayment_amount_per_schedule = total_repayment_amount / duration
             current_time = timezone.now()
@@ -670,12 +665,19 @@ class ApproveOrDeclineLoan(APIView):
                 else:
                     payment_date = current_time + relativedelta(years=i)
                 loan_scheduler = LoanScheduler.objects.create(
-                    loan=loan,
+                    loan=loan_obj,
                     date=payment_date,
                     amount=total_repayment_amount_per_schedule,
                     status='pending'
                 )
-=======
+            return Response({"message": "loan has been approved"})
+        elif loan_status and loan_status == 'denied':
+            loan_obj.status = 'denied'
+            loan_obj.save()
+            return Response({"message": "loan has been declined"})
+        return Response({"message": "invalid request"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class EarlySettledLoans(APIView):
     def get(self, request, pk=None):
         balanced_loans = Loan.objects.filter(status = "fully paid")
@@ -726,4 +728,3 @@ class GetDueLoansByDays(APIView):
         serializer = LoanSerializer(data, many=True)
         result = None
         return Response(serializer.data)
->>>>>>> 8aa1213555ff7da54a1241b7bf168519e88d3c3b

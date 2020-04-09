@@ -40,7 +40,8 @@ from loans.views import (
     PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
-    DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays
+    DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays,
+    ApproveOrDeclineLoan
     )
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 
@@ -108,6 +109,6 @@ urlpatterns = [
     path('due_loans_no_payment/', DueLoansNoPayment.as_view()),
     path('due_loans_part_payment/', DueLoansPartPayment.as_view()),
     path('due_loans_by_days/', GetDueLoansByDays.as_view()),
-
+    path('api/approve-or-decline-loan/', ApproveOrDeclineLoan.as_view()),
 ]
 

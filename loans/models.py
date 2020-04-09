@@ -128,12 +128,9 @@ class Loan(models.Model):
     interest_start_date = models.DateField(blank=True, null=True)
 
     maturity_date = models.DateField(blank=True, null=True)
-    repayment_amount = models.IntegerField(
-        max_length=400)
-    amount_paid = models.IntegerField(
-        max_length=400)
-    remaining_balance = models.IntegerField(
-        max_length=400)
+    repayment_amount = models.DecimalField(max_digits=100, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=100, decimal_places=2)
+    remaining_balance = models.DecimalField(max_digits=100, decimal_places=2)
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
     maturity = models.BooleanField(default=False)
