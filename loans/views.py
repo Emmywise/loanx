@@ -735,17 +735,53 @@ class GetDueLoansByDays(APIView):
         return Response(serializer.data)
 
 
-class MakeLoanRepayment(APIView):
+class ManualRepayment(APIView):
     def post(self, request, pk=None):
-        amount_paid = request.data.get('amount')
+        amount = int(request.data.get('amount'))
         loan = request.data.get('loan')
-        # loan_status = request.data.get('status')
-        # days_due = request.GET.get("days_due")
-        # filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today())
-        # data = []
-        # for filtered_loan in filtered_loans:
-        #     if ((datetime.date.today() - filtered_loans[0].maturity_date).days) >= int(days_due):
-        #         data.append(filtered_loan)
-        serializer = LoanSerializer(data, many=True)
-        # result = None
-        return Response(serializer.data)
+        repayment_mode = request.data.get('repayment_mode')
+        payment_type = request.data.get('payment_type')
+        proof_of_payment = request.FILES.get('proof_of_payment')
+        collector = request.data.get('collector')
+        comment = request.data.get('comment')
+        collector = LoanOfficer.objects.get(pk = int(collector))
+        sent_amount = amount
+        the_loan = Loan.objects.get(pk = loan)
+        try:
+            if(the_loan.amount_paid == None):
+                the_loan.amount_paid = 0.00
+            the_loan.amount_paid += amount
+            the_loan.save()
+        except:
+            pass
+        get_schedule = LoanScheduler.objects.filter(loan = loan).order_by("date")
+        if len(get_schedule) == 0:
+            return Response({"msg":"open loan found"})
+        for unit in get_schedule:
+            if(unit.status != "settled"):
+                if(int(amount) < unit.amount):
+                    unit.amount -= int(amount)
+                    amount = 0
+                    unit.save()
+                else:
+                    unit.status = "settled"
+                    amount -= unit.amount
+                    unit.save()
+            else:
+                pass
+
+        #deduct schedule
+        #deduct balance
+        #order_by("-id")
+        loan_payment = LoanRepayment.objects.create(
+            loan=the_loan,\
+            date=datetime.date.today(),\
+            amount=sent_amount,\
+            repayment_mode = repayment_mode,\
+            payment_type = payment_type,\
+            proof_of_payment = proof_of_payment,\
+            collector = collector,\
+            comment = comment
+        )
+        serializer = LoanSchedulerSerializer(get_schedule, many=True)
+        return Response({"msg":"repayment was successful","schedule": serializer.data})

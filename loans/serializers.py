@@ -3,7 +3,7 @@ from .models import Loan, LoanComment, LoanOfficer, LoanFee, LoanCollateral, Loa
 from .models import (
     Loan, LoanComment, LoanRepayment,
     LoanCollateral, LoanGuarantor,
-    GuarantorFile, LoanDisbursement
+    GuarantorFile, LoanDisbursement, LoanScheduler
 )
 
 from .models import (Loan, LoanComment, LoanOfficer, LoanFee,
@@ -85,3 +85,9 @@ class LoanDisbursementSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = LoanDisbursement
+
+class LoanSchedulerSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        fields = '__all__'
+        model = LoanScheduler
