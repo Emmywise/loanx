@@ -646,6 +646,10 @@ class ApproveOrDeclineLoan(APIView):
                 total_repayment_amount += float(overridden_interest_rate) * total_repayment_amount
             if default_fixed_amount and (not overridden_interest_rate):
                 total_repayment_amount += default_fixed_amount
+            try:
+                existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
+            except:
+                pass
             for loan_fee in loan_fees:
                 total_repayment_amount += float(loan_fee.amount)
             loan_obj.repayment_amount = total_repayment_amount
@@ -664,6 +668,8 @@ class ApproveOrDeclineLoan(APIView):
                     payment_date = current_time + relativedelta(months=i)
                 else:
                     payment_date = current_time + relativedelta(years=i)
+
+                #check if there are original schedules
                 loan_scheduler = LoanScheduler.objects.create(
                     loan=loan_obj,
                     date=payment_date,
@@ -726,5 +732,20 @@ class GetDueLoansByDays(APIView):
             if ((datetime.date.today() - filtered_loans[0].maturity_date).days) >= int(days_due):
                 data.append(filtered_loan)
         serializer = LoanSerializer(data, many=True)
-        result = None
+        return Response(serializer.data)
+
+
+class MakeLoanRepayment(APIView):
+    def post(self, request, pk=None):
+        amount_paid = request.data.get('amount')
+        loan = request.data.get('loan')
+        # loan_status = request.data.get('status')
+        # days_due = request.GET.get("days_due")
+        # filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today())
+        # data = []
+        # for filtered_loan in filtered_loans:
+        #     if ((datetime.date.today() - filtered_loans[0].maturity_date).days) >= int(days_due):
+        #         data.append(filtered_loan)
+        serializer = LoanSerializer(data, many=True)
+        # result = None
         return Response(serializer.data)
