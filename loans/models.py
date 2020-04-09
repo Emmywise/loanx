@@ -104,7 +104,7 @@ class Loan(models.Model):
     borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
-    duration = models.PositiveIntegerField(default=1)
+    duration = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=30, choices=status_choices, default='pending')
     request_date = models.DateField(auto_now=True)
@@ -128,12 +128,12 @@ class Loan(models.Model):
     interest_start_date = models.DateField(blank=True, null=True)
 
     maturity_date = models.DateField(blank=True, null=True)
-    repayment_amount = models.CharField(
-        max_length=400, blank=True, null=True)
-    amount_paid = models.CharField(
-        max_length=400, blank=True, null=True)
-    remaining_balance = models.CharField(
-        max_length=400, blank=True, null=True)
+    repayment_amount = models.IntegerField(
+        max_length=400)
+    amount_paid = models.IntegerField(
+        max_length=400)
+    remaining_balance = models.IntegerField(
+        max_length=400)
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
     maturity = models.BooleanField(default=False)
@@ -151,10 +151,18 @@ class Loan(models.Model):
     staff_permission_accepted = models.BooleanField(default=False)
     bvn = models.CharField(max_length=20, blank=True, null=True)
 
+    def get_balance(self):
+        return self.repayment_amount - self.amount_paid
+
+    def released(self):
+        return self.status == "current"
+
+    def maturity(self):
+        return self.maturity_date <= datetime.date.today()
 
 
 class LoanOfficer(models.Model):
-    loan = models.ManyToManyField(Loan)
+    loan = models.ManyToManyField(Loan, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, null=True)
     phonenumber = models.CharField(max_length=128, blank=True, null=True)
 
@@ -335,6 +343,16 @@ class LoanAttachment(models.Model):
 
 
 class LoanCollateral(models.Model):
+    loan_type_choices = (
+        ('Automobiles', 'Automobiles'),
+        ('Electronic Items', 'Electronic Items'),
+        ('Insurance Policies', 'Insurance Policies'),
+        ('Investments', 'Investments'),
+        ('Machineries and Equipments', 'Machineries and Equipments'),
+        ('Real Estate', 'Real Estate'),
+        ('Valuables and Collectibles', 'Valuables and Collectibles'),
+        ('Others', 'Others')
+    )
     current_status = (
         ('Deposited into branch', 'Deposited into branch'),
         ('Collateral with borrower', 'Collateral with borrower'),
@@ -349,6 +367,8 @@ class LoanCollateral(models.Model):
         ('Good', 'Good'),
         ('Fair', 'Fair'),
         ('Damaged', 'Damaged'),)
+    collateral_type = models.CharField(
+        choices=loan_type_choices, max_length=100)
     collateral_type_choice = (
         ('Automobiles', 'Automobiles'),
         ('Electronic Items', 'Electronic Items'),

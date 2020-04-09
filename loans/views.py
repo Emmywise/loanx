@@ -91,8 +91,13 @@ class LoanView(APIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             loan = Loan.objects.get(id=loan_id)
+<<<<<<< HEAD
             if loan.status == stat:
                 loan.save()
+=======
+            if(loan.status == stat):
+                loan.save(commit=False)
+>>>>>>> 8aa1213555ff7da54a1241b7bf168519e88d3c3b
             else:
                 return Response([{"status": "invalid loan status"}],
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -617,6 +622,7 @@ class LoanAttachmentDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+<<<<<<< HEAD
 class ApproveOrDeclineLoan(APIView):
 
     def post(self, request):
@@ -669,3 +675,55 @@ class ApproveOrDeclineLoan(APIView):
                     amount=total_repayment_amount_per_schedule,
                     status='pending'
                 )
+=======
+class EarlySettledLoans(APIView):
+    def get(self, request, pk=None):
+        balanced_loans = Loan.objects.filter(status = "fully paid")
+        result = []
+        for loan in balanced_loans:
+            loan_repayments = LoanRepayment.objects.filter(loan=loan, last_repayment_date__lt = loan.maturity_date)
+            for repayment in loan_repayments:
+                result.append(loan)
+        serializer = LoanSerializer(result, many=True)
+        result = None
+        return Response(serializer.data)
+
+
+class DueLoansBetween(APIView):
+    def get(self, request, pk=None):
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
+        filtered_loans = Loan.objects.filter(maturity_date__gt = start_date).filter(maturity_date__lt = end_date)
+        serializer = LoanSerializer(filtered_loans, many=True)
+        result = None
+        return Response(serializer.data)
+
+
+class DueLoansNoPayment(APIView):
+    def get(self, request, pk=None):
+        filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today()).filter(amount_paid__lte = 0)
+        serializer = LoanSerializer(filtered_loans, many=True)
+        result = None
+        return Response(serializer.data)
+
+
+class DueLoansPartPayment(APIView):
+    def get(self, request, pk=None):
+        filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today()).filter(amount_paid__gte = 0).exclude(status= "fully paid")
+        serializer = LoanSerializer(filtered_loans, many=True)
+        result = None
+        return Response(serializer.data)
+
+
+class GetDueLoansByDays(APIView):
+    def get(self, request, pk=None):
+        days_due = request.GET.get("days_due")
+        filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today())
+        data = []
+        for filtered_loan in filtered_loans:
+            if ((datetime.date.today() - filtered_loans[0].maturity_date).days) >= int(days_due):
+                data.append(filtered_loan)
+        serializer = LoanSerializer(data, many=True)
+        result = None
+        return Response(serializer.data)
+>>>>>>> 8aa1213555ff7da54a1241b7bf168519e88d3c3b
