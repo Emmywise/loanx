@@ -91,13 +91,8 @@ class LoanView(APIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             loan = Loan.objects.get(id=loan_id)
-<<<<<<< HEAD
             if loan.status == stat:
                 loan.save()
-=======
-            if(loan.status == stat):
-                loan.save(commit=False)
->>>>>>> 8aa1213555ff7da54a1241b7bf168519e88d3c3b
             else:
                 return Response([{"status": "invalid loan status"}],
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -622,9 +617,8 @@ class LoanAttachmentDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-<<<<<<< HEAD
 class ApproveOrDeclineLoan(APIView):
-
+    
     def post(self, request):
         loan = request.data.get('loan')
         loan_status = request.data.get('status')
@@ -675,7 +669,6 @@ class ApproveOrDeclineLoan(APIView):
                     amount=total_repayment_amount_per_schedule,
                     status='pending'
                 )
-=======
 class EarlySettledLoans(APIView):
     def get(self, request, pk=None):
         balanced_loans = Loan.objects.filter(status = "fully paid")
@@ -726,4 +719,3 @@ class GetDueLoansByDays(APIView):
         serializer = LoanSerializer(data, many=True)
         result = None
         return Response(serializer.data)
->>>>>>> 8aa1213555ff7da54a1241b7bf168519e88d3c3b
