@@ -317,7 +317,7 @@ class LoanFee(models.Model):
     name = models.CharField(max_length=128, blank=True, null=True)
     staff_initiating_it = models.ForeignKey(
         LoanOfficer, on_delete=models.DO_NOTHING)
-    amount = models.PositiveIntegerField(default=0)
+    amount = models.DecimalField(decimal_places=2, max_digits=20)
     interest_type = models.CharField(
         choices=interest_type_types, max_length=100)
     apply_loan_fee = models.CharField(
@@ -335,19 +335,6 @@ class LoanAttachment(models.Model):
 
 
 class LoanCollateral(models.Model):
-<<<<<<< HEAD
-    loan_type_choices = (
-        ('Automobiles', 'Automobiles'),
-        ('Electronic Items', 'Electronic Items'),
-        ('Insurance Policies', 'Insurance Policies'),
-        ('Investments', 'Investments'),
-        ('Machineries and Equipments', 'Machineries and Equipments'),
-        ('Real Estate', 'Real Estate'),
-        ('Valuables and Collectibles', 'Valuables and Collectibles'),
-        ('Others', 'Others')
-    )
-=======
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     current_status = (
         ('Deposited into branch', 'Deposited into branch'),
         ('Collateral with borrower', 'Collateral with borrower'),
@@ -362,10 +349,6 @@ class LoanCollateral(models.Model):
         ('Good', 'Good'),
         ('Fair', 'Fair'),
         ('Damaged', 'Damaged'),)
-<<<<<<< HEAD
-    collateral_type = models.CharField(
-        choices=loan_type_choices, max_length=100)
-=======
     collateral_type_choice = (
         ('Automobiles', 'Automobiles'),
         ('Electronic Items', 'Electronic Items'),
@@ -378,7 +361,6 @@ class LoanCollateral(models.Model):
     )
     collateral_type = models.CharField(
         choices=collateral_type_choice, max_length=100)
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
     value = models.DecimalField(max_digits=20, decimal_places=2)

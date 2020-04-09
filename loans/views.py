@@ -8,7 +8,7 @@ import random
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.utils import timezone
-
+from dateutil.relativedelta import relativedelta
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import FileUploadParser
@@ -91,13 +91,8 @@ class LoanView(APIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             loan = Loan.objects.get(id=loan_id)
-<<<<<<< HEAD
-            if(loan.status == stat):
-                loan.save(commit=False)
-=======
             if loan.status == stat:
                 loan.save()
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
             else:
                 return Response([{"status": "invalid loan status"}],
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -133,7 +128,6 @@ class LoanCommentList(APIView):
         return Response(serializer.data)
 
 
-<<<<<<< HEAD
 class LoanFeeList(APIView):
     def post(self, request):
         # initialize a loan by customer
@@ -151,8 +145,6 @@ class LoanFeeList(APIView):
         return Response(serializer.data)
 
 
-=======
->>>>>>> 977292559276aba1dda602b31ba9bb19a22d234c
 class LoanCommentDetail(APIView):
     """
     Retrieve, update or delete a snippet instance.
@@ -623,3 +615,57 @@ class LoanAttachmentDetail(APIView):
         loan_attachment = self.get_object(pk)
         loan_attachment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ApproveOrDeclineLoan(APIView):
+
+    def post(self, request):
+        loan = request.data.get('loan')
+        loan_status = request.data.get('status')
+
+        loan_obj = Loan.objects.filter(pk=loan).first()
+        if not loan_obj:
+            return Response({"message": "Loan with the loan id cannot be fount"},
+                            status=status.HTTP_404_NOT_FOUND)
+        if loan_status and loan_status == 'current':
+            default_interest_rate = loan_obj.loan_type.interest_rate
+            if default_interest_rate:
+                default_interest_rate = float(default_interest_rate)
+            overridden_interest_rate = loan_obj.loan_interest_percentage
+            if overridden_interest_rate:
+                overridden_interest_rate = float(overridden_interest_rate)
+            default_fixed_amount = loan_obj.loan_interest_fixed_amount
+            if default_fixed_amount:
+                default_fixed_amount = float(default_fixed_amount)
+            duration = loan_obj.duration
+            loan_fees = loan_obj.loanfee_set.all()
+            total_repayment_amount = float(loan_obj.amount)
+            if (not default_fixed_amount) and (not overridden_interest_rate):
+                total_repayment_amount += float(default_interest_rate) * total_repayment_amount
+            if overridden_interest_rate and (not default_fixed_amount):
+                total_repayment_amount += float(overridden_interest_rate) * total_repayment_amount
+            if default_fixed_amount and (not overridden_interest_rate):
+                total_repayment_amount += default_fixed_amount
+            for loan_fee in loan_fees:
+                total_repayment_amount += float(loan_fee.amount)
+            loan_obj.repayment_amount = total_repayment_amount
+            loan_obj.remaining_balance = total_repayment_amount
+            loan_obj.save()
+            total_repayment_amount_per_schedule = total_repayment_amount / duration
+            current_time = timezone.now()
+            for i in range(1, duration + 1):
+                payment_date = current_time
+                if loan_obj.loan_duration_period == 'Days':
+                    payment_date = current_time + relativedelta(days=i)
+                elif loan_obj.loan_duration_period == 'Weeks':
+                    payment_date = current_time + relativedelta(weeks=i)
+                elif loan_obj.loan_duration_period == 'Months':
+                    payment_date = current_time + relativedelta(months=i)
+                else:
+                    payment_date = current_time + relativedelta(years=i)
+                loan_scheduler = LoanScheduler.objects.create(
+                    loan=loan,
+                    date=payment_date,
+                    amount=total_repayment_amount_per_schedule,
+                    status='pending'
+                )
