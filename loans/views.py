@@ -22,6 +22,8 @@ from accounts.models import (
     Profile
 )
 from .utils import details_from_bvn, compare_dates, get_loan_score
+from .save_auth_code import ddebitCode
+from .direct_debit import directDebit
 
 
 class LoanView(APIView):
@@ -274,30 +276,6 @@ class InterestOutstandingLoan(APIView):
         # print(principal_outstanding)
         # serializer = LoanSerializer(principal_outstanding, many=True)
         return Response(output)
-
-
-# class PenaltyOutstandingLoan(APIView):
-#     def get(self, request, pk=None):
-#         penalty_outstanding = Loan.objects.filter(penalty_rate__gte=0)
-#         output = []
-#         for unit in principal_outstanding:
-#             if(unit.repayment_amount == None):
-#                 unit.repayment_amount = 0.00
-#             if (unit.amount_paid == None):
-#                 unit.amount_paid = 0
-#             interest_amount = int(unit.repayment_amount) - int(unit.principal_amount)
-#             if int(unit.amount_paid) > int(unit.principal_amount):
-#                 interest_amount = interest_amount - int(unit.amount_paid) - int(unit.principal_amount)
-#             if (unit.repayment_amount < unit.principal_amount):
-#                 rez = {'loan_id':unit.pk, 'released':unit.loan_release_date, 'maturity': unit.maturity_date, 'principal': unit.principal_amount,
-#                 'principal_paid': unit.amount_paid, 'interest_oustanding': str(interest_amount), 'principal_due_till_today': unit.remaining_balance,
-#                 'status': unit.status, 'branch':str(unit.branch.pk), 'borrower':str(unit.borrower.pk)}
-#                 output.append(rez)
-#             else:
-#                 pass
-#         #print(principal_outstanding)
-#         #serializer = LoanSerializer(principal_outstanding, many=True)
-#         return Response(output)
 
 
 #getting the loan by category
@@ -769,10 +747,6 @@ class ManualRepayment(APIView):
                     unit.save()
             else:
                 pass
-
-        #deduct schedule
-        #deduct balance
-        #order_by("-id")
         loan_payment = LoanRepayment.objects.create(
             loan=the_loan,\
             date=datetime.date.today(),\
@@ -785,3 +759,78 @@ class ManualRepayment(APIView):
         )
         serializer = LoanSchedulerSerializer(get_schedule, many=True)
         return Response({"msg":"repayment was successful","schedule": serializer.data})
+
+
+class AutomaticRepayment(APIView):
+    #directDebit("AUTH_nbd2sdkqkb","lexmill99@gmail.com","500000")
+    def post(self, request, pk=None):
+        amount = int(request.data.get('amount'))
+        loan = request.data.get('loan')
+        repayment_mode = "Wire Transfer"
+        payment_type = "card"
+        proof_of_payment = request.FILES.get('proof_of_payment')
+        collector = "Not Applicable(Automatic repayment)"
+        the_loan = Loan.objects.get(pk = loan)
+        email = the_loan.email
+        if email is None:
+            return Response({"msg":"pls provide an email address to continue"}, status=status.HTTP_400_BAD_REQUEST)
+        if (the_loan.authorization_code == None):
+            return Response({"msg":"pls register for direct debit service as you do not have an authorization code"}, status=status.HTTP_400_BAD_REQUEST)
+        direct_debit_status = directDebit(the_loan.authorization_code, email , float(amount))
+        if (direct_debit_status['data']['status'] != "success"):
+            return Response({"msg":"pls retry with better network or verify your account has enough funds"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if(the_loan.amount_paid == None):
+                the_loan.amount_paid = 0.00
+            the_loan.amount_paid += amount
+            the_loan.save()
+        except:
+            pass
+        get_schedule = LoanScheduler.objects.filter(loan = loan).order_by("date")
+        if len(get_schedule) == 0:
+            return Response({"msg":"open loan found"})
+        for unit in get_schedule:
+            if(unit.status != "settled"):
+                if(int(amount) < unit.amount):
+                    unit.amount -= int(amount)
+                    amount = 0
+                    unit.save()
+                else:
+                    unit.status = "settled"
+                    amount -= unit.amount
+                    unit.save()
+            else:
+                pass
+        loan_payment = LoanRepayment.objects.create(
+            loan=the_loan,\
+            date=datetime.date.today(),\
+            amount=amount,\
+            repayment_mode = repayment_mode,\
+            payment_type = payment_type,\
+            proof_of_payment = proof_of_payment,\
+
+        )
+        serializer = LoanSchedulerSerializer(get_schedule, many=True)
+        return Response({"msg":"repayment was successful","schedule": serializer.data})
+
+
+class SaveAuthCode(APIView):
+    def post(self, request, pk=None):
+        try:
+            loan = request.data.get('loan')
+            card_number = request.data.get('card_number')
+            cvv = request.data.get('cvv')
+            month = request.data.get('month')
+            year = request.data.get('year')
+            loan_instance = Loan.objects.get(pk = int(loan))
+            if (loan_instance.email != None):
+                email = loan_instance.email
+            else:
+                return Response({"msg":"pls provide an email address to continue"})
+            #ddebitCode("lexmill99@gmail.com", "1.00", "4084084084084081", "408", "02", "22")
+            auth_code = ddebitCode(email, "2500", card_number, cvv, month, year)
+            loan_instance.authorization_code = auth_code
+            loan_instance.save()
+            return Response({"msg":"authorization code has been saved and 2500 was deducted from your account"}, status = status.HTTP_200_OK)    
+        except:
+            return Response({"msg":"charge was not successful, retry with enough balance and good network"}, status=status.HTTP_400_BAD_REQUEST) 

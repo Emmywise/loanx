@@ -134,12 +134,8 @@ class Loan(models.Model):
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
     maturity = models.BooleanField(default=False)
-    # ref_id = models.CharField(max_length=100, blank=True, null=True)
-    # authorization_code = models.CharField(
-    #     max_length=100, blank=True, null=True)
-    # authorization_code = models.CharField(
-    #     max_length=100, blank=True, null=True)
-    # email = models.EmailField(max_length=120, blank=True, null=True)
+    email = models.EmailField(max_length=120, blank=True, null=True)
+    authorization_code = models.CharField(max_length=120, blank=True, null=True)
     penalty_rate = models.DecimalField(
         max_digits=10, decimal_places=2, blank=True, null=True)
     interest_rate = models.DecimalField(
@@ -223,7 +219,7 @@ class LoanRepayment(models.Model):
     repayment_cycle = models.CharField(choices=repayment_cycle_types,
                                        max_length=400, blank=True, null=True)
     proof_of_payment = models.FileField(validators=[validate_file_extension],
-                                        upload_to="repayments")
+                                        upload_to="repayments", blank=True, null=True)
 
     collector = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING, blank=True, null=True)
     number_of_repayments = models.PositiveIntegerField(default=0, blank=True, null=True)
