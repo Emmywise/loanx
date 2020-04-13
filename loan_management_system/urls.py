@@ -44,7 +44,10 @@ from loans.views import (
     ApproveOrDeclineLoan
     )
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
-
+from savings_investments.views import (
+    SavingsProductViewSet, SavingsAccountViewSet,
+    TellerViewSet, SavingsTransactionViewSet
+)
 
 router = DefaultRouter()
 
@@ -65,6 +68,11 @@ router.register('loan-disbursement', LoanDisbursementViewSet, 'loan-disbursement
 router.register('loan-collateral', LoanCollateralViewSet, 'loan-collateral')
 router.register('loan-guarantor', LoanGuarantorViewSet, 'loan-guarantor')
 router.register('loan-guarantor-file', GuarantorFileViewSet, 'loan-guarantor-file')
+
+router.register('savings-products', SavingsProductViewSet, 'savings-products')
+router.register('savings-accounts', SavingsAccountViewSet, 'savings-accounts')
+router.register('teller', TellerViewSet, 'teller')
+router.register('savings-transaction', SavingsTransactionViewSet, 'savings-transaction')
 
 
 urlpatterns = [

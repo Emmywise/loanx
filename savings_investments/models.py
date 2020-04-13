@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import validate_comma_separated_integer_list
 from accounts.models import Profile, Branch
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 # Create your models here.
 
 
@@ -21,11 +23,18 @@ class SavingsProduct(models.Model):
         ('Last Savings Balance', 'Last Savings Balance'),
         ('Pro-Rata Basis', 'Pro-Rata Basis')
     )
+    posting_frequency_choices = (
+        ('Every 1 Month', 'Every 1 Month'),
+        ('Every 2 Month', 'Every 2 Month'),
+        ('Every 3 Month', 'Every 3 Month'),
+        ('Every 4 Month', 'Every 4 Month'),
+        ('Every 6 Month', 'Every 6 Month'),
+        ('Every 12 Month', 'Every 12 Month'),
+    )
     name = models.CharField(max_length=125)
-    interest_rate_per_anum = models.DecimalField(max_digits=10, decimal_places=2)
+    interest_rate_per_annum = models.DecimalField(max_digits=10, decimal_places=2)
     interest_method = models.CharField(max_length=100, choices=interest_method_choices)
-    interest_posting_frequency = models.CharField(max_length=300, blank=True, null=True)
-    interest_addition_time = models.CharField(max_length=300, blank=True, null=True)
+    interest_posting_frequency = models.CharField(max_length=300, choices=posting_frequency_choices)
     min_balance_for_interest = models.DecimalField(max_digits=100, decimal_places=2)
     overdrawn = models.BooleanField(default=False)
     min_balance_for_withdrawal = models.DecimalField(max_digits=100, decimal_places=2)
@@ -39,13 +48,29 @@ class SavingsAccount(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
     savings_product = models.ForeignKey(SavingsProduct, on_delete=models.CASCADE)
-    savings_id = models.CharField(max_length=125, blank=True, null=True)
+    savings_id = models.CharField(max_length=125, blank=True, null=True, unique=True)
     description = models.TextField(blank=True, null=True)
     available_balance = models.DecimalField(max_digits=100, decimal_places=2)
     ledger_balance = models.DecimalField(max_digits=100, decimal_places=2)
 
     def __str__(self):
-        return self.savings_id
+        return self.savings_id or ''
+
+
+@receiver(pre_save, sender=SavingsAccount)
+def update_savings_id(sender, instance, **kwargs):
+    # ledger balance
+    instance.available_balance = instance.ledger_balance - \
+                                 instance.savings_product.min_balance_for_withdrawal
+    if not instance.savings_id:
+        last_obj = SavingsAccount.objects.last()
+        # print(last_obj.savings_id)
+        if last_obj:
+            if last_obj.savings_id:
+                instance.savings_id = str(int(last_obj.savings_id) + 1)
+        else:
+            instance.savings_id = str(10000001)
+
 
 
 class CustomSavingsAccountField(models.Model):
@@ -67,12 +92,18 @@ class CashSafeManagement(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
 
 
+@receiver(post_save, sender=Branch)
+def create_cash_safe_management(sender, instance, created, **kwargs):
+    try:
+        instance.cashsafemanagement
+    except:
+        CashSafeManagement.objects.create(branch=instance)
+
+
 class CashSource(models.Model):
     cash_safe_management = models.ForeignKey(CashSafeManagement, on_delete=models.CASCADE)
     name = models.CharField(max_length=225, unique=True)
-    bank_balance_cash = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    bank_balance_coins = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    total_balance = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
+    balance = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -81,16 +112,19 @@ class CashSource(models.Model):
 
 class Teller(models.Model):
     cash_safe_management = models.ForeignKey(CashSafeManagement, on_delete=models.CASCADE)
-    staff = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    staff = models.OneToOneField(Profile, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
-    debit_notes = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    debit_coins = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    credit_notes = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    credit_coins = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    total_balance = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
+    debit = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    total_balance = models.DecimalField(max_digits=100, decimal_places=2, default=0)
 
     def __str__(self):
         return self.staff.user.username
+
+
+@receiver(pre_save, sender=Teller)
+def sum_teller_balance(sender, instance, **kwargs):
+    instance.total_balance = instance.credit - instance.debit
 
 
 class TransferCash(models.Model):
@@ -103,8 +137,7 @@ class TransferCash(models.Model):
                                     related_name='from_teller')
     to_teller = models.ForeignKey(CashSource, on_delete=models.CASCADE, blank=True, null=True,
                                   related_name='to_teller')
-    amount_notes = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    amount_coins = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
+    amount = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
 
     # post save to update the respective cash source and teller amount
 
@@ -125,10 +158,24 @@ class SavingsTransaction(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     teller = models.ForeignKey(Teller, on_delete=models.CASCADE)
     savings_account = models.ForeignKey(SavingsAccount, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=100, decimal_places=2)
+    amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     transaction_type = models.CharField(max_length=100, choices=savings_transaction_choices)
     date_time = models.DateTimeField()
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.transaction_type
+
+
+@receiver(post_save, sender=SavingsTransaction)
+def update_teller_and_account_balance(sender, instance, created, **kwargs):
+    if instance.transaction_type in ['Deposit', 'Interest', 'Commission', 'Dividend', 'Transfer In']:
+        instance.teller.credit += instance.amount
+        instance.teller.save()
+        instance.savings_account.ledger_balance += instance.amount
+        instance.savings_account.save()
+    if instance.transaction_type in ['Withdrawal', 'Bank Fee', 'Transfer Out']:
+        instance.teller.debit += instance.amount
+        instance.teller.save()
+        instance.savings_account.ledger_balance -= instance.amount
+        instance.savings_account.save()
