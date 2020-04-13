@@ -165,7 +165,7 @@ EMAIL_HOST_PASSWORD = '67fb1ed70579d6'
 EMAIL_PORT = '2525'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_BROKER_URL = 'redis://localhost'
 #CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
 
 CELERY_TIMEZONE = 'Asia/Kolkata'
