@@ -134,12 +134,8 @@ class Loan(models.Model):
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
     maturity = models.BooleanField(default=False)
-    # ref_id = models.CharField(max_length=100, blank=True, null=True)
-    # authorization_code = models.CharField(
-    #     max_length=100, blank=True, null=True)
-    # authorization_code = models.CharField(
-    #     max_length=100, blank=True, null=True)
-    # email = models.EmailField(max_length=120, blank=True, null=True)
+    email = models.EmailField(max_length=120, blank=True, null=True)
+    authorization_code = models.CharField(max_length=120, blank=True, null=True)
     penalty_rate = models.DecimalField(
         max_digits=10, decimal_places=2, blank=True, null=True)
     interest_rate = models.DecimalField(
@@ -190,8 +186,6 @@ class LoanRepayment(models.Model):
         ("manual", "manual"),
         ("card", "card"),
     )
-    loan = models.ForeignKey(
-        'Loan', on_delete=models.DO_NOTHING)
     repayment_cycle_types = (
         ("daily", "daily"),
         ("weekly", "weekly"),
@@ -211,33 +205,38 @@ class LoanRepayment(models.Model):
         ("Online Transfer", "Online Transfer"),
         ("PayPal", "PayPal"),
     )
+    loan = models.ForeignKey(
+        'Loan', on_delete=models.DO_NOTHING)
     repayment_mode = models.CharField(choices=repayment_mode_choices,
                             max_length=400, blank=True, null=True)
     amount = models.DecimalField(max_digits=60, decimal_places=2)
     date = models.DateField()
     payment_type = models.CharField(
         max_length=128, blank=True, null=True, choices=payment_type_choices)
-    status = models.CharField(max_length=60, choices=loan_repayment_choices)
+    status = models.CharField(max_length=60, choices=loan_repayment_choices, blank=True, null=True)
     charge_interest = models.CharField(
-        max_length=60, choices=charge_interest_choices)
+        max_length=60, choices=charge_interest_choices, blank=True, null=True)
     repayment_cycle = models.CharField(choices=repayment_cycle_types,
                                        max_length=400, blank=True, null=True)
     proof_of_payment = models.FileField(validators=[validate_file_extension],
                                         upload_to="repayments", blank=True, null=True)
 
-    collector = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING)
-    number_of_repayments = models.PositiveIntegerField(default=1)
-    grace_period = models.PositiveIntegerField(default=0)
-    grace_period_once_per_loan = models.BooleanField(default=False)
-    penalty_branch_holiday = models.BooleanField(default=True)
+    collector = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING, blank=True, null=True)
+    number_of_repayments = models.PositiveIntegerField(default=0, blank=True, null=True)
+    grace_period = models.PositiveIntegerField(default=0, blank=True, null=True)
+    grace_period_once_per_loan = models.BooleanField(default=False, blank=True, null=True)
+    penalty_branch_holiday = models.BooleanField(default=True, blank=True, null=True)
     first_repayment_date = models.DateField(blank=True, null=True)
     last_repayment_date = models.DateField(blank=True, null=True)
-    first_repayment_on_prorata = models.BooleanField(default=False)
-    adjust_remaining_repayments = models.BooleanField(default=False)
+    first_repayment_on_prorata = models.BooleanField(default=False, blank=True, null=True)
+    adjust_remaining_repayments = models.BooleanField(default=False, blank=True, null=True)
     amortization = models.CharField(max_length=400, blank=True, null=True)
-    days_passed = models.PositiveIntegerField(default=10)
+    days_passed = models.PositiveIntegerField(default=0, blank=True, null=True)
     pending_due = models.CharField(max_length=400, blank=True, null=True)
-
+    comment = models.CharField(max_length=400, blank=True, null=True)
+    
+    def __str__(self):
+        return str(self.loan.id) + "-" + str(self.date) + "-" + self.loan.borrower.first_name + " " + self.loan.borrower.last_name
 
 class LoanDisbursement(models.Model):
     disbursement_mode_types = (

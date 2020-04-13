@@ -18,7 +18,7 @@ from django.core.mail import EmailMultiAlternatives
 from celery import shared_task
 from .tasks import create_random_user_accounts
 
-from .tasks import send_sms
+from .tasks import send_sms, send_mail_task
 
 
 # create_random_user_accounts.delay(10)
@@ -42,7 +42,8 @@ class SendSMS(APIView):
 
     def get(self, request):
         sms = SMS.objects.all()
-        send_sms.delay()
+        send_mail_task.delay("hello from leke","lms@lms.com","lexmill99@gmail.com")
+
         serializer = SendSMSSerializer(sms, many=True)
         return Response(serializer.data)
 
