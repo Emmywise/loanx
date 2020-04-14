@@ -46,7 +46,8 @@ from loans.views import (
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
-    TellerViewSet, SavingsTransactionViewSet
+    TellerViewSet, SavingsTransactionViewSet,
+    CashSourceViewSet, TransferCashViewSet
 )
 
 router = DefaultRouter()
@@ -73,6 +74,8 @@ router.register('savings-products', SavingsProductViewSet, 'savings-products')
 router.register('savings-accounts', SavingsAccountViewSet, 'savings-accounts')
 router.register('teller', TellerViewSet, 'teller')
 router.register('savings-transaction', SavingsTransactionViewSet, 'savings-transaction')
+router.register('cash-source', CashSourceViewSet, 'cash-source')
+router.register('transfer-cash', TransferCashViewSet, 'transfer-cash')
 
 
 urlpatterns = [

@@ -3,19 +3,21 @@ from django.core.validators import validate_comma_separated_integer_list
 from accounts.models import Profile, Branch
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
+from django.core.validators import ValidationError
+
 # Create your models here.
 
 
 data_type_choices = (
-        ('text_field', 'text_field'),
-        ('date_field', 'date_field'),
-        ('integer_field', 'integer_field'),
-        ('decimal_field', 'decimal_field'),
-        ('url_field', 'url_field'),
-        ('text_area', 'text_area'),
-        ('dropdown', 'dropdown'),
-        ('file_upload', 'file_upload'),
-    )
+    ('text_field', 'text_field'),
+    ('date_field', 'date_field'),
+    ('integer_field', 'integer_field'),
+    ('decimal_field', 'decimal_field'),
+    ('url_field', 'url_field'),
+    ('text_area', 'text_area'),
+    ('dropdown', 'dropdown'),
+    ('file_upload', 'file_upload'),
+)
 
 
 class SavingsProduct(models.Model):
@@ -72,9 +74,7 @@ def update_savings_id(sender, instance, **kwargs):
             instance.savings_id = str(10000001)
 
 
-
 class CustomSavingsAccountField(models.Model):
-
     savings_account = models.ForeignKey(SavingsAccount, on_delete=models.CASCADE)
     field = models.CharField(max_length=125)
     text_field = models.TextField(blank=True, null=True)
@@ -103,11 +103,18 @@ def create_cash_safe_management(sender, instance, created, **kwargs):
 class CashSource(models.Model):
     cash_safe_management = models.ForeignKey(CashSafeManagement, on_delete=models.CASCADE)
     name = models.CharField(max_length=225, unique=True)
+    debit = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
+    credit = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     balance = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
+
+
+@receiver(pre_save, sender=CashSource)
+def sum_cash_source_balance(sender, instance, **kwargs):
+    instance.balance = (instance.credit or 0) - (instance.debit or 0)
 
 
 class Teller(models.Model):
@@ -124,7 +131,7 @@ class Teller(models.Model):
 
 @receiver(pre_save, sender=Teller)
 def sum_teller_balance(sender, instance, **kwargs):
-    instance.total_balance = instance.credit - instance.debit
+    instance.total_balance = (instance.credit or 0) - (instance.debit or 0)
 
 
 class TransferCash(models.Model):
@@ -133,17 +140,32 @@ class TransferCash(models.Model):
                                          related_name='from_cash_source')
     to_cash_source = models.ForeignKey(CashSource, on_delete=models.CASCADE, blank=True, null=True,
                                        related_name='to_cash_source')
-    from_teller = models.ForeignKey(CashSource, on_delete=models.CASCADE, blank=True, null=True,
+    from_teller = models.ForeignKey(Teller, on_delete=models.CASCADE, blank=True, null=True,
                                     related_name='from_teller')
-    to_teller = models.ForeignKey(CashSource, on_delete=models.CASCADE, blank=True, null=True,
+    to_teller = models.ForeignKey(Teller, on_delete=models.CASCADE, blank=True, null=True,
                                   related_name='to_teller')
     amount = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
 
     # post save to update the respective cash source and teller amount
 
 
-class SavingsTransaction(models.Model):
+@receiver(post_save, sender=TransferCash)
+def update_cash_source_and_teller_balance(sender, instance, created, **kwargs):
+    if instance.from_cash_source:
+        instance.from_cash_source.debit += instance.amount
+        instance.from_cash_source.save()
+    if instance.to_cash_source:
+        instance.to_cash_source.credit += instance.amount
+        instance.to_cash_source.save()
+    if instance.from_teller:
+        instance.from_teller.debit += instance.amount
+        instance.from_teller.save()
+    if instance.to_teller:
+        instance.to_teller.credit += instance.amount
+        instance.to_teller.save()
 
+
+class SavingsTransaction(models.Model):
     savings_transaction_choices = (
         ('Deposit', 'Deposit'),
         ('Withdrawal', 'Withdrawal'),
