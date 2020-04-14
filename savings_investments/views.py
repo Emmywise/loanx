@@ -113,7 +113,7 @@ class InitiateCreditSavings(APIView):
         """collect id of savings account"""
         savings_account = SavingsAccount.objects.get(pk = int(request.data.get('savings_account')))
         posting_frequency = savings_account.savings_product.interest_posting_frequency
-        total_annual_interest = (((float(savings_account.savings_product.interest_rate_per_annum)/100)+1)*(float(savings_account.available_balance)))
+        total_annual_interest = (((float(savings_account.savings_product.interest_rate_per_annum)/100))*(float(savings_account.available_balance)))
         match_selection = {"Every 1 Month":12,"Every 2 Month":6,"Every 3 Month":4,"Every 4 Month":3,"Every 6 Month":2,"Every 12 Month":1}
         def check_freq(freq):
             return match_selection[freq]
@@ -124,8 +124,8 @@ class InitiateCreditSavings(APIView):
             savings_account.save()
             return "code ran successfully"
 
-
-        if(savings_account.savings_product.interest_rate_per_annum == 'Every 1 Month'):
+        print(savings_account.savings_product.interest_posting_frequency)
+        if(savings_account.savings_product.interest_posting_frequency == 'Every 1 Month'):
             app.conf.beat_schedule = {
                 'add-every-monday-morning': {
                     'task': 'credit_savings_account',
@@ -137,6 +137,7 @@ class InitiateCreditSavings(APIView):
                 'add-every-monday-morning': {
                     'task': 'credit_savings_account',
                     'schedule': crontab(minute='00', hour='00', day_of_month='1', month_of_year='*/6', **kwargs),
+                    #'schedule': crontab(minute='29', hour='19', day_of_month='14', month_of_year='*/6', **kwargs),
                 },
             }
         elif(savings_account.savings_product.interest_rate_per_annum == 'Every 3 Month'):
