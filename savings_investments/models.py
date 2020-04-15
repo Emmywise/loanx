@@ -42,8 +42,26 @@ class SavingsProduct(models.Model):
     min_balance_for_withdrawal = models.DecimalField(max_digits=100, decimal_places=2)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, blank=True, null=True)
 
+    # reports fields
+    deposit = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    transfer_in = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    withdrawal = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    interest = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    dividend = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    transfer_out = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    commission = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    balance = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+
     def __str__(self):
         return self.name
+
+
+@receiver(pre_save, sender=SavingsProduct)
+def update_savings_product_balance(sender, instance, **kwargs):
+    instance.balance = instance.deposit + instance.transfer_in - instance.withdrawal \
+                       - instance.fees + instance.interest + instance.dividend - instance.transfer_out \
+                       + instance.commission
 
 
 class SavingsAccount(models.Model):
@@ -125,6 +143,17 @@ class Teller(models.Model):
     credit = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     total_balance = models.DecimalField(max_digits=100, decimal_places=2, default=0)
 
+    # reports fields
+    report_deposit = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_transfer_in = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_withdrawal = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_interest = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_dividend = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_transfer_out = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_commission = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    report_balance = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+
     def __str__(self):
         return self.staff.user.username
 
@@ -132,6 +161,9 @@ class Teller(models.Model):
 @receiver(pre_save, sender=Teller)
 def sum_teller_balance(sender, instance, **kwargs):
     instance.total_balance = (instance.credit or 0) - (instance.debit or 0)
+    instance.report_balance = instance.report_deposit + instance.report_transfer_in - instance.report_withdrawal - \
+                              instance.report_fees + instance.report_interest + instance.report_dividends + \
+                              instance.report_commision - instance.report_transfer_out
 
 
 class TransferCash(models.Model):
@@ -178,12 +210,14 @@ class SavingsTransaction(models.Model):
     )
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
-    teller = models.ForeignKey(Teller, on_delete=models.CASCADE)
+    teller = models.ForeignKey(Teller, on_delete=models.CASCADE, blank=True, null=True)
     savings_account = models.ForeignKey(SavingsAccount, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     transaction_type = models.CharField(max_length=100, choices=savings_transaction_choices)
     date_time = models.DateTimeField()
     description = models.TextField(blank=True, null=True)
+    approved = models.BooleanField(default=False)
+    account_to_account_transfer = models.BooleanField(default=False)
 
     def __str__(self):
         return self.transaction_type
@@ -191,13 +225,78 @@ class SavingsTransaction(models.Model):
 
 @receiver(post_save, sender=SavingsTransaction)
 def update_teller_and_account_balance(sender, instance, created, **kwargs):
-    if instance.transaction_type in ['Deposit', 'Interest', 'Commission', 'Dividend', 'Transfer In']:
-        instance.teller.credit += instance.amount
-        instance.teller.save()
-        instance.savings_account.ledger_balance += instance.amount
-        instance.savings_account.save()
-    if instance.transaction_type in ['Withdrawal', 'Bank Fee', 'Transfer Out']:
-        instance.teller.debit += instance.amount
-        instance.teller.save()
-        instance.savings_account.ledger_balance -= instance.amount
-        instance.savings_account.save()
+    if instance.approved:
+        if instance.transaction_type in ['Deposit', 'Interest', 'Dividend', 'Transfer In']:
+            if not instance.account_to_account_transfer:
+                instance.teller.credit += instance.amount
+                # instance.teller.save()
+            instance.savings_account.ledger_balance += instance.amount
+            instance.savings_account.save()
+        if instance.transaction_type in ['Withdrawal', 'Bank Fee', 'Transfer Out', 'Commission']:
+            if not instance.account_to_account_transfer:
+                instance.teller.debit += instance.amount
+                # instance.teller.save()
+            instance.savings_account.ledger_balance -= instance.amount
+            instance.savings_account.save()
+        if instance.transaction_type == 'Deposit':
+            instance.savings_account.savings_product.deposit += instance.amount
+            instance.teller.report_deposit += instance.amount
+        if instance.transaction_type == 'Interest':
+            instance.savings_account.savings_product.interest += instance.amount
+            instance.teller.report_interest += instance.amount
+        if instance.transaction_type == 'Commission':
+            instance.savings_account.savings_product.commission -= instance.amount
+            instance.teller.report_commission -= instance.amount
+        if instance.transaction_type == 'Dividend':
+            instance.savings_account.savings_product.dividend += instance.amount
+            instance.teller.report_dividend += instance.amount
+        if instance.transaction_type == 'Transfer In':
+            instance.savings_account.savings_product.transfer_in += instance.amount
+            if not instance.account_to_account_transfer:
+                instance.teller.report_transfer_in += instance.amount
+        if instance.transaction_type == 'Withdrawal':
+            instance.savings_account.savings_product.witdrawal += instance.amount
+            instance.teller.report_withdrawal += instance.amount
+        if instance.transaction_type == 'Bank Fee':
+            instance.savings_account.savings_product.fees += instance.amount
+            instance.teller.report_fees += instance.amount
+        if instance.transaction_type == 'Transfer Out':
+            instance.savings_account.savings_product.transfer_out += instance.amount
+            if not instance.account_to_account_transfer:
+                instance.teller.report_transfer_out += instance.amount
+
+        instance.savings_account.savings_product.save()
+        if instance.teller:
+            instance.teller.save()
+
+
+class FundTransferLog(models.Model):
+    teller = models.ForeignKey(Teller, on_delete=models.DO_NOTHING, blank=True, null=True)
+    from_account = models.ForeignKey(SavingsAccount, on_delete=models.DO_NOTHING, related_name='from_account')
+    to_account = models.ForeignKey(SavingsAccount, on_delete=models.DO_NOTHING, related_name='to_account')
+    amount = models.DecimalField(max_digits=100, decimal_places=2)
+    date_time = models.DateTimeField()
+
+
+@receiver(post_save, sender=FundTransferLog)
+def update_transaction_table(sender, instance, created, **kwargs):
+    SavingsTransaction.objects.create(
+        branch=instance.from_account.branch,
+        teller=instance.teller,
+        savings_account=instance.from_account,
+        amount=instance.amount,
+        transaction_type='Transfer Out',
+        date_time=instance.date_time,   
+        approved=True,
+        account_to_account_transfer=True
+    )
+    SavingsTransaction.objects.create(
+        branch=instance.to_account.branch,
+        teller=instance.teller,
+        savings_account=instance.to_account,
+        amount=instance.amount,
+        transaction_type='Transfer In',
+        date_time=instance.date_time,
+        approved=True,
+        account_to_account_transfer=True
+    )

@@ -11,7 +11,18 @@ class SavingsAccountSerializer(serializers.ModelSerializer):
 class SavingsProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavingsProduct
-        fields = '__all__'
+        # fields = '__all__'
+        exclude = ['name', 'deposit', 'transfer_in', 'withdrawal', 'fees',
+                   'interest', 'dividend', 'transfer_out', 'commission',
+                   'balance']
+
+
+class SavingsProductReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavingsProduct
+        fields = ['deposit', 'transfer_in', 'withdrawal', 'fees',
+                  'interest', 'dividend', 'transfer_out', 'commission',
+                  'balance']
 
 
 class CashSourceSerializer(serializers.ModelSerializer):
@@ -23,7 +34,22 @@ class CashSourceSerializer(serializers.ModelSerializer):
 class TellerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teller
-        fields = '__all__'
+        exclude = ['report_deposit', 'report_transfer_in', 'report_withdrawal', 'report_fees',
+                   'report_interest', 'report_dividend', 'report_transfer_out', 'report_commission',
+                   'report_balance']
+
+
+class TellerReportSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Teller
+        fields = ['name', 'report_deposit', 'report_transfer_in', 'report_withdrawal', 'report_fees',
+                  'report_interest', 'report_dividend', 'report_transfer_out', 'report_commission',
+                  'report_balance']
+
+    def get_name(self, obj):
+        return obj.staff.user.username
 
 
 class TransferCashSerializer(serializers.ModelSerializer):
@@ -70,3 +96,15 @@ class SavingsTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavingsTransaction
         fields = '__all__'
+
+
+class TransferFundSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = FundTransferLog
+
+    def validate(self, attrs):
+        if attrs['from_account'] == attrs['to_account']:
+            raise serializers.ValidationError("cannot transfer fund from/to same account")
+        return attrs
