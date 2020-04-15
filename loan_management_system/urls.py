@@ -48,7 +48,7 @@ from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
     TellerViewSet, SavingsTransactionViewSet,
     CashSourceViewSet, TransferCashViewSet,
-    FundTransferLogViewSet
+    FundTransferLogViewSet, InitiateCreditSavings
 )
 
 router = DefaultRouter()
@@ -126,5 +126,6 @@ urlpatterns = [
     path('api/make_manual_repayment/', ManualRepayment.as_view()),
     path('api/save_auth_code/', SaveAuthCode.as_view()),
     path('api/make_automatic_repayment/', AutomaticRepayment.as_view()),
+    path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 
