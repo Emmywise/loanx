@@ -47,7 +47,12 @@ from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersS
 from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
     TellerViewSet, SavingsTransactionViewSet,
-    CashSourceViewSet, TransferCashViewSet, InitiateCreditSavings
+    CashSourceViewSet, TransferCashViewSet,
+    FundTransferLogViewSet, InitiateCreditSavings
+)
+from commons.views import (
+    AssetTypeViewSet, AssetViewSet,
+    AssetDocumentViewSet, AssetValuationViewSet
 )
 
 router = DefaultRouter()
@@ -76,6 +81,12 @@ router.register('teller', TellerViewSet, 'teller')
 router.register('savings-transaction', SavingsTransactionViewSet, 'savings-transaction')
 router.register('cash-source', CashSourceViewSet, 'cash-source')
 router.register('transfer-cash', TransferCashViewSet, 'transfer-cash')
+router.register('transfer-funds', FundTransferLogViewSet, 'transfer-funds')
+
+router.register('asset-type', AssetTypeViewSet, 'asset-type')
+router.register('asset', AssetViewSet, 'asset')
+router.register('asset-document', AssetDocumentViewSet, 'asset-document')
+router.register('asset-valuation', AssetValuationViewSet, 'asset-valuation')
 
 
 urlpatterns = [

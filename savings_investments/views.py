@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db.models import Q
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,18 +8,27 @@ from celery import shared_task
 from .serializers import (
     SavingsTransactionSerializer, SavingsProductSerializer,
     SavingsAccountSerializer, TellerSerializer,
-    CashSourceSerializer, TransferCashSerializer
+    CashSourceSerializer, TransferCashSerializer,
+    SavingsProductReportSerializer, TellerReportSerializer,
+    TransferFundSerializer
 )
 from .models import (
     SavingsTransaction, SavingsProduct,
     SavingsAccount, Teller,
-    CashSource, TransferCash
+    CashSource, TransferCash,
+    FundTransferLog
 )
 # Create your views here.
 
 
 class SavingsProductViewSet(ModelViewSet):
-    serializer_class = SavingsProductSerializer
+    # serializer_class = SavingsProductSerializer
+
+    def get_serializer_class(self):
+        report = self.request.GET.get("report")
+        if report and (report == 'true'):
+            return SavingsProductReportSerializer
+        return SavingsProductSerializer
 
     def get_queryset(self):
         queryset = SavingsProduct.objects.all()
@@ -48,7 +58,13 @@ class SavingsAccountViewSet(ModelViewSet):
 
 
 class TellerViewSet(ModelViewSet):
-    serializer_class = TellerSerializer
+    # serializer_class = TellerSerializer
+
+    def get_serializer_class(self):
+        report = self.request.GET.get("report")
+        if report and (report == 'true'):
+            return TellerReportSerializer
+        return TellerSerializer
 
     def get_queryset(self):
         queryset = Teller.objects.all()
@@ -82,6 +98,10 @@ class SavingsTransactionViewSet(ModelViewSet):
         if date_to:
             queryset = queryset.filter(date_time__lte=date_to)
 
+        approved = self.request.GET.get("approved")
+        if approved and (approved == 'true'):
+            queryset = queryset.filter(approved=True)
+
         return queryset
 
 
@@ -107,6 +127,30 @@ class TransferCashViewSet(ModelViewSet):
         return queryset
 
 
+class FundTransferLogViewSet(ModelViewSet):
+    serializer_class = TransferFundSerializer
+
+    def get_queryset(self):
+        queryset = FundTransferLog.objects.all()
+
+        branch = self.request.GET.get("branch")
+        if branch:
+            queryset = queryset.filter(branch__pk=branch)
+
+        teller = self.request.GET.get("teller")
+        if teller:
+            queryset = queryset.filter(teller__pk=teller)
+
+        date_from = self.request.GET.get("date_from")
+        if date_from:
+            queryset = queryset.filter(date_time__gte=date_from)
+
+        date_to = self.request.GET.get("date_to")
+        if date_to:
+            queryset = queryset.filter(date_time__lte=date_to)
+
+        return queryset
+        
 
 class InitiateCreditSavings(APIView):
     def post(self, request, pk=None):
