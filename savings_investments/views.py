@@ -124,7 +124,6 @@ class InitiateCreditSavings(APIView):
             savings_account.save()
             return "code ran successfully"
 
-        print(savings_account.savings_product.interest_posting_frequency)
         if(savings_account.savings_product.interest_posting_frequency == 'Every 1 Month'):
             app.conf.beat_schedule = {
                 'add-every-monday-morning': {
@@ -136,8 +135,8 @@ class InitiateCreditSavings(APIView):
             app.conf.beat_schedule = {
                 'add-every-monday-morning': {
                     'task': 'credit_savings_account',
-                    'schedule': crontab(minute='00', hour='00', day_of_month='1', month_of_year='*/6', **kwargs),
-                    #'schedule': crontab(minute='29', hour='19', day_of_month='14', month_of_year='*/6', **kwargs),
+                    #'schedule': crontab(minute='00', hour='00', day_of_month='1', month_of_year='*/6', **kwargs),
+                    'schedule': crontab(minute='03', hour='19', day_of_month='14', month_of_year='*/6', **kwargs),
                 },
             }
         elif(savings_account.savings_product.interest_rate_per_annum == 'Every 3 Month'):
