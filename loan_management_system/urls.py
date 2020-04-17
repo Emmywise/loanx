@@ -51,8 +51,9 @@ from savings_investments.views import (
     FundTransferLogViewSet, InitiateCreditSavings
 )
 from commons.views import (
-    AssetTypeViewSet, AssetViewSet,
-    AssetDocumentViewSet, AssetValuationViewSet
+    AssetTypeViewSet, AssetViewSet, AssetDocumentViewSet,
+    AssetValuationViewSet, ExpenseTypeViewSet, ExpenseViewSet,
+    ExpenseDocumentViewSet
 )
 
 router = DefaultRouter()
@@ -86,7 +87,10 @@ router.register('transfer-funds', FundTransferLogViewSet, 'transfer-funds')
 router.register('asset-type', AssetTypeViewSet, 'asset-type')
 router.register('asset', AssetViewSet, 'asset')
 router.register('asset-document', AssetDocumentViewSet, 'asset-document')
+router.register('expense-type', ExpenseTypeViewSet, 'expense-type')
+router.register('expense', ExpenseViewSet, 'expense')
 router.register('asset-valuation', AssetValuationViewSet, 'asset-valuation')
+router.register('expense-document', ExpenseDocumentViewSet, 'expense-document')
 
 
 urlpatterns = [
