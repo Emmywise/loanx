@@ -100,18 +100,27 @@ class Loan(models.Model):
         ('round_up_10', 'round_up_10'),
         ('round_off_100', 'round_off_100'),
     )
+    interest_method_types = (
+        ('Flat Rate', 'Flat Rate'),
+        ('Reducing Balance - Equal Installments','Reducing Balance - Equal Installments'),
+        ('Reducing Balance - Equal Principal','Reducing Balance - Equal Principal'),
+        ('Interest-Only', ' Interest-Only'),
+        ('Compound-Interest', 'Compound Interest'),
+    )
     branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
+    interest_mode = models.CharField(
+        choices=interest_type_types, max_length=400, blank=True, null=True)
     duration = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=30, choices=status_choices, default='pending')
     request_date = models.DateField(auto_now=True)
     loan_release_date = models.DateField(blank=True, null=True)
     direct_debit = models.BooleanField(default=False)
-    interest_type = models.CharField(
-        choices=interest_type_types, max_length=100)
+    interest_method = models.CharField(
+        choices=interest_method_types, max_length=100)
     loan_interest_percentage = models.CharField(
         max_length=400, blank=True, null=True)
     loan_interest_fixed_amount = models.CharField(
