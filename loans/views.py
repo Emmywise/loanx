@@ -4,6 +4,7 @@ import requests
 import hashlib
 import datetime
 import random
+import decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
@@ -599,11 +600,12 @@ class ApproveOrDeclineLoan(APIView):
     
     def post(self, request):
         loan = request.data.get('loan')
-        loan_status = request.data.get('status')
-
+        #loan_status = request.data.get('status')
         loan_obj = Loan.objects.filter(pk=loan).first()
+        loan_status = loan_obj.status
+        print(loan_status)
         if not loan_obj:
-            return Response({"message": "Loan with the loan id cannot be fount"},
+            return Response({"message": "Loan with the loan id cannot be found"},
                             status=status.HTTP_404_NOT_FOUND)
         if loan_status and loan_status == 'current':
             default_interest_rate = loan_obj.loan_type.interest_rate
@@ -618,47 +620,184 @@ class ApproveOrDeclineLoan(APIView):
             duration = loan_obj.duration
             loan_fees = loan_obj.loanfee_set.all()
             total_repayment_amount = float(loan_obj.principal_amount)
-            if (not default_fixed_amount) and (not overridden_interest_rate):
-                total_repayment_amount += float(default_interest_rate) * total_repayment_amount
-            if overridden_interest_rate and (not default_fixed_amount):
-                total_repayment_amount += float(overridden_interest_rate) * total_repayment_amount
-            if default_fixed_amount and (not overridden_interest_rate):
-                total_repayment_amount += default_fixed_amount
-            try:
-                existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
-            except:
-                pass
             for loan_fee in loan_fees:
                 total_repayment_amount += float(loan_fee.amount)
-            loan_obj.repayment_amount = total_repayment_amount
-            loan_obj.remaining_balance = total_repayment_amount
-            loan_obj.status = loan_status
-            loan_obj.save()
-            total_repayment_amount_per_schedule = total_repayment_amount / duration
             current_time = timezone.now()
-            for i in range(1, duration + 1):
-                payment_date = current_time
-                if loan_obj.loan_duration_period == 'Days':
-                    payment_date = current_time + relativedelta(days=i)
-                elif loan_obj.loan_duration_period == 'Weeks':
-                    payment_date = current_time + relativedelta(weeks=i)
-                elif loan_obj.loan_duration_period == 'Months':
-                    payment_date = current_time + relativedelta(months=i)
-                else:
-                    payment_date = current_time + relativedelta(years=i)
+            if loan_obj.interest_method == "Flat Rate":
+                total_repayment_amount = total_repayment_amount / duration
+                print(total_repayment_amount)
+                if (not default_fixed_amount) and (not overridden_interest_rate):
+                    total_repayment_amount = total_repayment_amount + ((default_interest_rate/100)*float(loan_obj.principal_amount))
+                if overridden_interest_rate and (not default_fixed_amount):
+                    total_repayment_amount = total_repayment_amount + ((overridden_interest_rate/100)*float(loan_obj.principal_amount))
+                if default_fixed_amount and (not overridden_interest_rate):
+                    total_repayment_amount += default_fixed_amount/ duration
 
-                #check if there are original schedules
-                loan_scheduler = LoanScheduler.objects.create(
-                    loan=loan_obj,
-                    date=payment_date,
-                    amount=total_repayment_amount_per_schedule,
-                    status='pending'
-                )
-            return Response({"message": "loan has been approved"})
+                try:
+                    existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
+                except:
+                    pass
+                for loan_fee in loan_fees:
+                    total_repayment_amount += float(loan_fee.amount)
+                loan_obj.repayment_amount = total_repayment_amount
+                loan_obj.remaining_balance = total_repayment_amount 
+                loan_obj.status = loan_status
+                loan_obj.save()
+                for i in range(1, duration + 1):
+                    payment_date = current_time
+                    if loan_obj.loan_duration_period == 'Days':
+                        payment_date = current_time + relativedelta(days=i)
+                    elif loan_obj.loan_duration_period == 'Weeks':
+                        payment_date = current_time + relativedelta(weeks=i)
+                    elif loan_obj.loan_duration_period == 'Months':
+                        payment_date = current_time + relativedelta(months=i)
+                    else:
+                        payment_date = current_time + relativedelta(years=i)
+
+                    #check if there are original schedules
+                    loan_scheduler = LoanScheduler.objects.create(
+                        loan=loan_obj,
+                        date=payment_date,
+                        amount=total_repayment_amount,
+                        status='pending'
+                    )
+                return Response({"message": "loan has been approved"})
+            elif loan_obj.interest_method == "Reducing Balance - Equal Principal":
+                principal_outstanding = float(loan_obj.principal_amount)
+                try:
+                    for loan_fee in loan_fees:
+                        principal_outstanding += float(loan_fee.amount)
+                except:
+                    pass
+                default_interest_rate = loan_obj.loan_type.interest_rate
+                if default_interest_rate:
+                    interest_rate = float(default_interest_rate)
+                overridden_interest_rate = loan_obj.loan_interest_percentage
+                if overridden_interest_rate != None:
+                    interest_rate = float(overridden_interest_rate)
+                total_repayment_amount_per_schedule = principal_outstanding / duration
+                try:
+                    existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
+                except:
+                    pass
+                loan_obj.status = loan_status
+                loan_obj.save()               
+                for i in range(1, duration + 1):
+                    payment_date = current_time
+                    repayment_schedule = total_repayment_amount_per_schedule + (principal_outstanding * (interest_rate / 100))
+                    if loan_obj.loan_duration_period == 'Days':
+                        payment_date = current_time + relativedelta(days=i)
+                    elif loan_obj.loan_duration_period == 'Weeks':
+                        payment_date = current_time + relativedelta(weeks=i)
+                    elif loan_obj.loan_duration_period == 'Months':
+                        payment_date = current_time + relativedelta(months=i)
+                    else:
+                        payment_date = current_time + relativedelta(years=i)
+
+                    loan_scheduler = LoanScheduler.objects.create(
+                        loan=loan_obj,
+                        date=payment_date,
+                        amount=repayment_schedule,
+                        status='pending')
+                    principal_outstanding -= total_repayment_amount_per_schedule
+                return Response({"message": "loan has been approved"})
+            elif loan_obj.interest_method == "Interest-Only":
+                total_repayment_amount = total_repayment_amount / duration
+                print(total_repayment_amount)
+                if (not default_fixed_amount) and (not overridden_interest_rate):
+                    total_repayment_amount = total_repayment_amount + ((default_interest_rate/100)*float(loan_obj.principal_amount))
+                if overridden_interest_rate and (not default_fixed_amount):
+                    total_repayment_amount = total_repayment_amount + ((overridden_interest_rate/100)*float(loan_obj.principal_amount))
+                if default_fixed_amount and (not overridden_interest_rate):
+                    total_repayment_amount += default_fixed_amount/ duration
+
+                try:
+                    existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
+                except:
+                    pass
+                for loan_fee in loan_fees:
+                    total_repayment_amount += float(loan_fee.amount)
+                loan_obj.repayment_amount = total_repayment_amount
+                loan_obj.remaining_balance = total_repayment_amount 
+                loan_obj.status = loan_status
+                loan_obj.save()
+                for i in range(1, duration + 1):
+                    payment_date = current_time
+                    if loan_obj.loan_duration_period == 'Days':
+                        payment_date = current_time + relativedelta(days=i)
+                    elif loan_obj.loan_duration_period == 'Weeks':
+                        payment_date = current_time + relativedelta(weeks=i)
+                    elif loan_obj.loan_duration_period == 'Months':
+                        payment_date = current_time + relativedelta(months=i)
+                    else:
+                        payment_date = current_time + relativedelta(years=i)
+
+                    #check if there are original schedules
+                    loan_scheduler = LoanScheduler.objects.create(
+                        loan=loan_obj,
+                        date=payment_date,
+                        amount=total_repayment_amount,
+                        status='pending'
+                    )
+                return Response({"message": "loan has been approved"})
+
+
+
+
+
+
+            elif loan_obj.interest_method == "Reducing Balance - Equal Installments":
+                principal_outstanding = float(loan_obj.principal_amount)
+                try:
+                    for loan_fee in loan_fees:
+                        principal_outstanding += float(loan_fee.amount)
+                except:
+                    pass
+                default_interest_rate = loan_obj.loan_type.interest_rate
+                if default_interest_rate:
+                    interest_rate = float(default_interest_rate)
+                overridden_interest_rate = loan_obj.loan_interest_percentage
+                if overridden_interest_rate != None:
+                    interest_rate = float(overridden_interest_rate)
+                total_repayment_amount_per_schedule = principal_outstanding / duration
+                try:
+                    existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
+                except:
+                    pass               
+                for i in range(1, duration + 1):
+                    payment_date = current_time
+                    repayment_schedule = total_repayment_amount_per_schedule + (principal_outstanding * (interest_rate / 100))
+                    if loan_obj.loan_duration_period == 'Days':
+                        payment_date = current_time + relativedelta(days=i)
+                    elif loan_obj.loan_duration_period == 'Weeks':
+                        payment_date = current_time + relativedelta(weeks=i)
+                    elif loan_obj.loan_duration_period == 'Months':
+                        payment_date = current_time + relativedelta(months=i)
+                    else:
+                        payment_date = current_time + relativedelta(years=i)
+                    loan_scheduler = LoanScheduler.objects.create(
+                        loan=loan_obj,
+                        date=payment_date,
+                        amount=repayment_schedule,
+                        status='pending')
+                    principal_outstanding -= total_repayment_amount_per_schedule
+                return Response({"message": "loan has been approved"})
+
+
+
+
+
+
+
+
         elif loan_status and loan_status == 'denied':
             loan_obj.status = 'denied'
             loan_obj.save()
             return Response({"message": "loan has been declined"})
+        elif loan_status == 'past maturity':
+            return Response({"message": "loan is overdue"})
+        else:
+            return Response({"message": "loan is not active"})
         return Response({"message": "invalid request"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -729,6 +868,7 @@ class ManualRepayment(APIView):
             if(the_loan.amount_paid == None):
                 the_loan.amount_paid = 0.00
             the_loan.amount_paid += amount
+            the_loan.remaining_balance -= amount
             the_loan.save()
         except:
             pass
@@ -783,6 +923,7 @@ class AutomaticRepayment(APIView):
             if(the_loan.amount_paid == None):
                 the_loan.amount_paid = 0.00
             the_loan.amount_paid += amount
+            the_loan.remaining_balance -= amount
             the_loan.save()
         except:
             pass

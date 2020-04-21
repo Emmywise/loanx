@@ -75,3 +75,7 @@ class BorrowerGroup(models.Model):
     meeting_date = models.DateTimeField()
     description = models.CharField(max_length=255, null=True, blank=True)
     member = models.ManyToManyField(Borrower)
+
+
+class InviteBorrower(models.Model):
+    email_address = models.CharField(max_length=255)
