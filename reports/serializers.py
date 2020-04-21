@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import (
     CalendarEvent, CalendarEventEmail, CalendarLog,
+    OtherIncomeType, OtherIncome, OtherIncomeDocuments
 )
 
 
@@ -30,3 +31,24 @@ class CalendarEventEmailSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = CalendarEventEmail
+
+
+class OtherIncomeTypeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = OtherIncomeType
+
+
+class OtherIncomeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = OtherIncome
+
+
+class OtherIncomeDocumentsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = OtherIncomeDocuments
