@@ -701,13 +701,21 @@ class ApproveOrDeclineLoan(APIView):
                         status='pending')
                     principal_outstanding -= total_repayment_amount_per_schedule
                 return Response({"message": "loan has been approved"})
+
+                
             elif loan_obj.interest_method == "Interest-Only":
+                t = 0
+                for loan_fee in loan_fees:
+                    total_repayment_amount += float(loan_fee.amount)
+                t = total_repayment_amount
                 total_repayment_amount = total_repayment_amount / duration
-                print(total_repayment_amount)
                 if (not default_fixed_amount) and (not overridden_interest_rate):
-                    total_repayment_amount = total_repayment_amount + ((default_interest_rate/100)*float(loan_obj.principal_amount))
+                    total_repayment_amount = (default_interest_rate/100)*float(loan_obj.principal_amount)
+                    t = t + total_repayment_amount
                 if overridden_interest_rate and (not default_fixed_amount):
-                    total_repayment_amount = total_repayment_amount + ((overridden_interest_rate/100)*float(loan_obj.principal_amount))
+                    total_repayment_amount = (overridden_interest_rate/100)*float(loan_obj.principal_amount)
+                    print(total_repayment_amount)
+                    t = t + total_repayment_amount
                 if default_fixed_amount and (not overridden_interest_rate):
                     total_repayment_amount += default_fixed_amount/ duration
 
@@ -715,14 +723,14 @@ class ApproveOrDeclineLoan(APIView):
                     existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
                 except:
                     pass
-                for loan_fee in loan_fees:
-                    total_repayment_amount += float(loan_fee.amount)
                 loan_obj.repayment_amount = total_repayment_amount
                 loan_obj.remaining_balance = total_repayment_amount 
                 loan_obj.status = loan_status
                 loan_obj.save()
                 for i in range(1, duration + 1):
                     payment_date = current_time
+                    if i == duration:
+                        total_repayment_amount = t
                     if loan_obj.loan_duration_period == 'Days':
                         payment_date = current_time + relativedelta(days=i)
                     elif loan_obj.loan_duration_period == 'Weeks':
