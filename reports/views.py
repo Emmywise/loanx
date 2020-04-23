@@ -5,8 +5,15 @@ from django.utils import timezone
 from django.db.models import Q
 from fine_search.fine_search import perform_search_queryset
 from rest_framework.viewsets import ModelViewSet
-from .models import CalendarEventEmail, CalendarEvent, CalendarLog
-from .serializers import CalendarEventEmailSerializer, CalendarEventSerializer, CalendarLogSerializer
+from .models import (
+    CalendarEventEmail, CalendarEvent, CalendarLog,
+    OtherIncomeType, OtherIncome, OtherIncomeDocuments
+)
+from .serializers import (
+    CalendarEventEmailSerializer, CalendarEventSerializer, 
+    CalendarLogSerializer, OtherIncomeTypeSerializer,
+    OtherIncomeSerializer, OtherIncomeDocumentsSerializer
+)
 # Create your views here.
 
 
@@ -91,5 +98,38 @@ class CalendarLogViewSet(ModelViewSet):
         branch = self.request.GET.get('branch')
         if branch:
             queryset = queryset.filter(branch__pk=branch)
+        queryset = filter_date(self.request, queryset)
+        return queryset
+
+
+class OtherIncomeTypeViewSet(ModelViewSet):
+    serializer_class = OtherIncomeTypeSerializer
+
+    def get_queryset(self):
+        queryset = OtherIncomeType.objects.all()
+
+        return queryset
+
+
+class OtherIncomeViewSet(ModelViewSet):
+    serializer_class = OtherIncomeSerializer
+
+    def get_queryset(self):
+        queryset = OtherIncome.objects.all()
+        branch = self.request.GET.get('branch')
+        if branch:
+            queryset = queryset.filter(branch__pk=branch)
+        queryset = filter_date(self.request, queryset)
+        return queryset
+
+
+class OtherIncomeDocumentsViewSet(ModelViewSet):
+    serializer_class = OtherIncomeDocumentsSerializer
+
+    def get_queryset(self):
+        queryset = OtherIncomeDocuments.objects.all()
+        income = self.request.GET.get('income')
+        if income:
+            queryset = queryset.filter(income__pk=income)
         queryset = filter_date(self.request, queryset)
         return queryset

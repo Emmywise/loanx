@@ -28,7 +28,8 @@ from accounts.views import (
 from staffs.views import PayrollViewSet
 from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
-    CalenderEventEmailViewSet
+    CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,
+    OtherIncomeViewSet, OtherIncomeTypeViewSet
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
@@ -92,6 +93,10 @@ router.register('expense-type', ExpenseTypeViewSet, 'expense-type')
 router.register('expense', ExpenseViewSet, 'expense')
 router.register('asset-valuation', AssetValuationViewSet, 'asset-valuation')
 router.register('expense-document', ExpenseDocumentViewSet, 'expense-document')
+
+router.register('other-income-type', OtherIncomeTypeViewSet, 'other-income-type')
+router.register('other-income', OtherIncomeViewSet, 'other-income')
+router.register('other-income-document', OtherIncomeDocumentsViewSet, 'other-income-document')
 
 
 urlpatterns = [
