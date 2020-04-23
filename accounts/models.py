@@ -28,7 +28,7 @@ class Branch(models.Model):
     )
 
     name = models.CharField(max_length=400)
-    open_date = models.DateField()
+    open_dat = models.DateField()
     country = models.ForeignKey(Country, on_delete=models.DO_NOTHING)
     currency = models.CharField(max_length=10)
     date_format = models.CharField(max_length=20, choices=date_format_choices)
