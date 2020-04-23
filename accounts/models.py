@@ -46,6 +46,7 @@ class Branch(models.Model):
     is_sunday_branch_holiday = models.BooleanField(default=False)
     holiday_effect_on_loan_schedule = models.CharField(max_length=100,
                                                        choices=holiday_effect_on_loan_schedule_choices)
+    capital = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     loan_generate_string = models.CharField(max_length=400) # unique prepend string eg BR-, ILR-
 
     def __str__(self):
