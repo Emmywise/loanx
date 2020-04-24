@@ -9,9 +9,12 @@ from .send_sms import SendSMSAPI
 from .send_email import send_mail
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
-from loans.models import Loan
+from loans.models import Loan, LoanRepayment
 from savings_investments.models import SavingsAccount
 from borrowers.models import InviteBorrower
+from accounting.models import CashFlow
+from commons.models import Expense
+from staffs.models import Payroll
 
 @shared_task
 def send_sms():
@@ -130,3 +133,49 @@ def CreditAccounts():
             }
 
         return "successful"
+
+
+# @shared_task
+# def CacheLoanReleased():
+
+def LogExpenses(branch):
+    total = 0
+    all_expenses = Expense.objects.filter(branch=branch)
+    for each_expense in all_expenses:
+        total += each_expense.amount
+    return total
+
+def LogPayroll(branch):
+    total = 0
+    all_payroll = Payroll.objects.filter(branch=branch)
+    for each_payroll in all_payroll:
+        total += each_payroll.net_pay
+    return total
+
+def LogLoansReleased(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).exclude(status="denied").exclude(status="processing")
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.principal_amount
+    return total
+
+def LogLoanRepayments(branch):
+    total = 0
+    all_loan_repayments = LoanRepayment.objects.filter(branch=branch)
+    for each_loan_repayment in all_loan_repayments:
+        total += each_loan_repayment.amount
+    return total
+
+@shared_task
+def Save_Details():
+    branch = Branch.objects.all()
+    for each_branch in branch:
+        each_cash_flow = CashFlow()
+        each_cash_flow.branch_capital = each_cash_flow.branch.capital
+        each_cash_flow.expenses = LogExpenses(each_cash_flow)
+        each_cash_flow.payroll = LogPayroll(each_cash_flow)
+        each_cash_flow.loan_released = LogLoansReleased(each_cash_flow)
+        each_cash_flow.loan_repayments = LogLoanRepayments(each_cash_flow)
+        #b = CashFlow(name='Beatles Blog', tagline='All the latest Beatles news.')
+        each_cash_flow.save()
+    return "code ran successfully"
