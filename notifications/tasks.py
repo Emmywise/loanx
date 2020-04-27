@@ -10,11 +10,12 @@ from .send_email import send_mail
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
 from loans.models import Loan, LoanRepayment
-from savings_investments.models import SavingsAccount
+from savings_investments.models import SavingsAccount, SavingsProduct, CashSource, SavingsTransaction, CashSafeManagement
 from borrowers.models import InviteBorrower
 from accounting.models import CashFlow
 from commons.models import Expense
 from staffs.models import Payroll
+from accounts.models import Branch
 
 @shared_task
 def send_sms():
@@ -162,20 +163,79 @@ def LogLoansReleased(branch):
 def LogLoanRepayments(branch):
     total = 0
     all_loan_repayments = LoanRepayment.objects.filter(branch=branch)
-    for each_loan_repayment in all_loan_repayments:
-        total += each_loan_repayment.amount
-    return total
+    if len(all_loan_repayments) > 0:
+        for each_loan_repayment in all_loan_repayments:
+            total += each_loan_repayment.amount
+        return total
+    else:
+        return 0
+
+def LogDeposits(branch):
+    savings_transactions = SavingsTransaction.objects.filter(branch=branch)
+    st_total = 0 
+    for savings_transaction in savings_transactions:
+        if savings_transaction.transaction_type == 'Deposit' and savings_transaction.amount != None:
+            st_total += savings_transaction.amount
+    savings_products = SavingsProduct.objects.filter(branch=branch)
+    sp_total = 0
+    for savings_product in savings_products:
+        if savings_product.deposit != None:
+            sp_total += savings_product.deposit
+    csm = CashSafeManagement.objects.get(branch = branch)
+    cash_sources = CashSource.objects.filter(cash_safe_management = csm)
+    if len(cash_sources) > 0:
+        cs_total = 0
+        for cash_source in cash_sources:
+            if cash_source.credit != None:
+                cs_total += cash_source.credit
+        return st_total + sp_total + cs_total
+    else:
+        return 0
+
+def LogWithdrawals(branch):
+    savings_transactions = SavingsTransaction.objects.filter(branch=branch)
+    st_total = 0 
+    for savings_transaction in savings_transactions:
+        if savings_transaction.transaction_type == 'Withdrawal' and savings_transaction.amount != None:
+            st_total += savings_transaction.amount
+    savings_products = SavingsProduct.objects.filter(branch=branch)
+    sp_total = 0
+    for savings_product in savings_products:
+        if savings_product.withdrawal != None:
+            sp_total += savings_product.withdrawal
+    csm = CashSafeManagement.objects.get(branch = branch)
+    cash_sources = CashSource.objects.filter(cash_safe_management = csm)
+    if len(cash_sources) > 0:
+        cs_total = 0
+        for cash_source in cash_sources:
+            if cash_source.debit != None:
+                cs_total += cash_source.debit
+        return st_total + sp_total + cs_total
+    else:
+        return 0
+
+
+#SavingsTransaction__transaction_type
+#SavingsProduct
+#CashSource
 
 @shared_task
-def Save_Details():
+def SaveCashFlow():
     branch = Branch.objects.all()
     for each_branch in branch:
         each_cash_flow = CashFlow()
-        each_cash_flow.branch_capital = each_cash_flow.branch.capital
-        each_cash_flow.expenses = LogExpenses(each_cash_flow)
-        each_cash_flow.payroll = LogPayroll(each_cash_flow)
-        each_cash_flow.loan_released = LogLoansReleased(each_cash_flow)
-        each_cash_flow.loan_repayments = LogLoanRepayments(each_cash_flow)
+        each_cash_flow.branch = each_branch
+        if each_branch.capital != None:
+            each_cash_flow.branch_capital = each_branch.capital
+        else:
+            each_cash_flow.branch_capital = 0
+        each_cash_flow.expenses = LogExpenses(each_branch)
+        each_cash_flow.payroll = LogPayroll(each_branch)
+        each_cash_flow.loan_released = LogLoansReleased(each_branch)
+        each_cash_flow.loan_repayment = LogLoanRepayments(each_branch)
+        each_cash_flow.deposit = LogDeposits(each_branch) 
+        each_cash_flow.withdrawal = LogWithdrawals(each_branch)
         #b = CashFlow(name='Beatles Blog', tagline='All the latest Beatles news.')
         each_cash_flow.save()
+        print("yeah")
     return "code ran successfully"

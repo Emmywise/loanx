@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 import os
 import datetime
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_save
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 from borrowers.models import Borrower
 from accounts.models import Profile, Branch
 # Create your models here.
@@ -216,6 +217,7 @@ class LoanRepayment(models.Model):
     )
     loan = models.ForeignKey(
         'Loan', on_delete=models.DO_NOTHING)
+    branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     repayment_mode = models.CharField(choices=repayment_mode_choices,
                             max_length=400, blank=True, null=True)
     amount = models.DecimalField(max_digits=60, decimal_places=2)
@@ -243,9 +245,13 @@ class LoanRepayment(models.Model):
     days_passed = models.PositiveIntegerField(default=0, blank=True, null=True)
     pending_due = models.CharField(max_length=400, blank=True, null=True)
     comment = models.CharField(max_length=400, blank=True, null=True)
-    
+
     def __str__(self):
         return str(self.loan.id) + "-" + str(self.date) + "-" + self.loan.borrower.first_name + " " + self.loan.borrower.last_name
+
+@receiver(pre_save, sender=LoanRepayment)
+def update_loan_repayment_branch(sender, instance, **kwargs):
+    instance.branch = instance.loan.branch   
 
 class LoanDisbursement(models.Model):
     disbursement_mode_types = (

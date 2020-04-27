@@ -107,8 +107,9 @@ class CustomSavingsAccountField(models.Model):
 
 
 class CashSafeManagement(models.Model):
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
-
+    branch = models.OneToOneField(Branch, on_delete=models.CASCADE)
+    def __str__(self):
+        return self.branch.name
 
 @receiver(post_save, sender=Branch)
 def create_cash_safe_management(sender, instance, created, **kwargs):
