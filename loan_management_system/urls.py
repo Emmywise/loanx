@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token
 from rest_framework.routers import DefaultRouter
+from accounting.views import CashFlowAccumlated
 from accounts.views import (
     UserAccounts, CountryViewSet, BranchViewSet,
     BranchHolidayViewSet, BranchAdminViewSet,
@@ -145,6 +146,7 @@ urlpatterns = [
     path('api/make_manual_repayment/', ManualRepayment.as_view()),
     path('api/save_auth_code/', SaveAuthCode.as_view()),
     path('api/make_automatic_repayment/', AutomaticRepayment.as_view()),
+    path('api/cash_flow_accumulated/', CashFlowAccumlated.as_view())
     #path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 
