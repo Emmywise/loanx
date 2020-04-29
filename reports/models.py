@@ -359,8 +359,8 @@ class LoanBorrowerReport(models.Model):
     payment_penalty = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     payments_total = models.DecimalField(max_digits=100, decimal_places=2, default=0)
 
-    class Meta:
-        order_by = ['-borrower__id']
+    # class Meta:
+    #     order = ['-borrower__id']
 
 
 class LoanReport(models.Model):

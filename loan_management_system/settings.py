@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     'borrowers',
     'reports',
     'cloudinary',
-    'accounting'
+    'accounting',
+    'investors'
 ]
 
 MIDDLEWARE = [
