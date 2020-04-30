@@ -57,13 +57,13 @@ class CashFlowMonthly(APIView):
         start_date = month+"-"+"01"+"-"+year
         end_date = month+"-"+str(last_day)+"-"+year
         print(start_date)
-        print(end_date)
+        print(end_date)    
+        #http://127.0.0.1:8000/api/cash_flow_monthly/?month=4&year=2020&branch=1
         try:
-            #http://127.0.0.1:8000/api/cash_flow_monthly/?month=4&year=2020&branch=1
             start_object = datetime.strptime(start_date, '%m-%d-%Y').date()    
             end_object = datetime.strptime(end_date, '%m-%d-%Y').date()
             first_cash_flow = CashFlow.objects.filter(branch=branch).filter(date=start_object)[0] 
-            last_cash_flow = CashFlow.objects.filter(branch=branch).filter(date=end_object)[0]  
+            last_cash_flow = CashFlow.objects.filter(branch=branch).filter(date=end_object)[0] 
             branch_capital = first_cash_flow.branch_capital
             expenses = last_cash_flow.expenses - first_cash_flow.expenses
             payroll = last_cash_flow.payroll - first_cash_flow.payroll
@@ -75,7 +75,7 @@ class CashFlowMonthly(APIView):
             result = {"branch": branch, "branch_capital": branch_capital, "expenses": expenses, "payroll": payroll, "loan_released": loan_released, "loan_repayment": loan_repayment, "deposit": deposit, "withdrawal": withdrawal, "date": date}
             return Response(result)
         except:
-            return Response("Your input is not valid")
+            return Response("Be sure the month is completed and you sent the request correctly")
 
 
 class CashFlowAccumlated(APIView):
