@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import validate_comma_separated_integer_list
 from accounts.models import Branch
+from loans.models import Borrower, Loan
 
 # Create your models here.
 
@@ -341,3 +342,38 @@ class BalanceSheet(models.Model):
         max_length=400, blank=True, null=True)
     total_liabilities_and_equity = models.CharField(
         max_length=400, blank=True, null=True)
+
+
+class LoanBorrowerReport(models.Model):
+    borrower = models.ForeignKey(Borrower, on_delete=models.CASCADE)
+    no_loan_released = models.PositiveIntegerField(default=0)
+    principal_released = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_pricipal = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_interest = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_penalty = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_total = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_principal = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_interest = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payment_penalty = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_total = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+
+    class Meta:
+        order_by = ['-borrower__id']
+
+
+class LoanReport(models.Model):
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
+    no_loan_released = models.PositiveIntegerField(default=0)
+    principal_released = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_pricipal = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_interest = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_penalty = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    due_loans_total = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_principal = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_interest = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payment_penalty = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    payments_total = models.DecimalField(max_digits=100, decimal_places=2, default=0)
