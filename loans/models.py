@@ -153,6 +153,9 @@ class Loan(models.Model):
     staff_permission_disbursed = models.BooleanField(default=True)
     staff_permission_accepted = models.BooleanField(default=False)
     bvn = models.CharField(max_length=20, blank=True, null=True)
+    interest = models.DecimalField(max_digits=100, decimal_places=2)
+    loan_fees = models.DecimalField(max_digits=100, decimal_places=2)
+    penalty_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0.0)
 
     def get_balance(self):
         return self.repayment_amount - self.amount_paid

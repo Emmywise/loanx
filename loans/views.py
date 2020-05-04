@@ -620,25 +620,33 @@ class ApproveOrDeclineLoan(APIView):
             duration = loan_obj.duration
             loan_fees = loan_obj.loanfee_set.all()
             total_repayment_amount = float(loan_obj.principal_amount)
-            for loan_fee in loan_fees:
-                total_repayment_amount += float(loan_fee.amount)
+            # for loan_fee in loan_fees:
+            #     total_repayment_amount += float(loan_fee.amount)
             current_time = timezone.now()
             if loan_obj.interest_method == "Flat Rate":
                 total_repayment_amount = total_repayment_amount / duration
                 print(total_repayment_amount)
                 if (not default_fixed_amount) and (not overridden_interest_rate):
                     total_repayment_amount = total_repayment_amount + ((default_interest_rate/100)*float(loan_obj.principal_amount))
+                loan_obj.interest = (default_interest_rate/100)*float(loan_obj.principal_amount)
+                loan_fees = 0                
+                for loan_fee in loan_fees:
+                    loan_obj.loan_fees += float(loan_fee.amount)
                 if overridden_interest_rate and (not default_fixed_amount):
                     total_repayment_amount = total_repayment_amount + ((overridden_interest_rate/100)*float(loan_obj.principal_amount))
                 if default_fixed_amount and (not overridden_interest_rate):
                     total_repayment_amount += default_fixed_amount/ duration
+                principal_plus_interest = total_repayment_amount
 
                 try:
                     existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
                 except:
                     pass
+                total_loan_fees = 0.0
                 for loan_fee in loan_fees:
+                    total_loan_fees += loan_fee
                     total_repayment_amount += float(loan_fee.amount)
+                loan_obj.loan_fees = total_loan_fees
                 loan_obj.repayment_amount = total_repayment_amount
                 loan_obj.remaining_balance = total_repayment_amount 
                 loan_obj.status = loan_status
@@ -665,7 +673,9 @@ class ApproveOrDeclineLoan(APIView):
             elif loan_obj.interest_method == "Reducing Balance - Equal Principal":
                 principal_outstanding = float(loan_obj.principal_amount)
                 try:
+                    total_loan_fees = 0.0
                     for loan_fee in loan_fees:
+                        total_loan_fees += loan_fee
                         principal_outstanding += float(loan_fee.amount)
                 except:
                     pass
@@ -680,11 +690,14 @@ class ApproveOrDeclineLoan(APIView):
                     existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
                 except:
                     pass
+                loan_obj.loan_fees = total_loan_fees
                 loan_obj.status = loan_status
-                loan_obj.save()               
+                loan_obj.save()  
+                principal_plus_interest = 0.0             
                 for i in range(1, duration + 1):
                     payment_date = current_time
                     repayment_schedule = total_repayment_amount_per_schedule + (principal_outstanding * (interest_rate / 100))
+                    principal_plus_interest += repayment_schedule
                     if loan_obj.loan_duration_period == 'Days':
                         payment_date = current_time + relativedelta(days=i)
                     elif loan_obj.loan_duration_period == 'Weeks':
@@ -700,12 +713,20 @@ class ApproveOrDeclineLoan(APIView):
                         amount=repayment_schedule,
                         status='pending')
                     principal_outstanding -= total_repayment_amount_per_schedule
+                    total_loan_fees = 0.0
+                    for loan_fee in loan_fees:
+                        total_loan_fee += loan_fee
+                    loan_obj.loan_fees = total_loan_fee 
+                    loan_obj.interest = principal_plus_interest - total_loan_fee
+                    loan_obj.save()               
                 return Response({"message": "loan has been approved"})
 
                 
             elif loan_obj.interest_method == "Interest-Only":
                 t = 0
+                total_loan_fees = 0.0
                 for loan_fee in loan_fees:
+                    total_loan_fees += loan_fee
                     total_repayment_amount += float(loan_fee.amount)
                 t = total_repayment_amount
                 total_repayment_amount = total_repayment_amount / duration
@@ -723,14 +744,17 @@ class ApproveOrDeclineLoan(APIView):
                     existing_schedules = LoanScheduler.objects.filter(loan = loan).delete()
                 except:
                     pass
+                loan_obj.loan_fees = total_loan_fees
                 loan_obj.repayment_amount = total_repayment_amount
                 loan_obj.remaining_balance = total_repayment_amount 
                 loan_obj.status = loan_status
                 loan_obj.save()
                 for i in range(1, duration + 1):
+
                     payment_date = current_time
                     if i == duration:
                         total_repayment_amount = t
+                    principal_plus_interest += total_repayment_amount
                     if loan_obj.loan_duration_period == 'Days':
                         payment_date = current_time + relativedelta(days=i)
                     elif loan_obj.loan_duration_period == 'Weeks':
@@ -747,6 +771,13 @@ class ApproveOrDeclineLoan(APIView):
                         amount=total_repayment_amount,
                         status='pending'
                     )
+                    total_loan_fees = 0.0
+                    for loan_fee in loan_fees:
+                        total_loan_fee += loan_fee
+                    loan_obj.loan_fees = total_loan_fee 
+                    loan_obj.interest = principal_plus_interest - total_loan_fee
+                    loan_obj.save()
+
                 return Response({"message": "loan has been approved"})
 
 
@@ -757,7 +788,9 @@ class ApproveOrDeclineLoan(APIView):
             elif loan_obj.interest_method == "Reducing Balance - Equal Installments":
                 principal_outstanding = float(loan_obj.principal_amount)
                 try:
+                    total_loan_fees = 0
                     for loan_fee in loan_fees:
+                        total_loan_fees += loan_fee
                         principal_outstanding += float(loan_fee.amount)
                 except:
                     pass
@@ -775,6 +808,7 @@ class ApproveOrDeclineLoan(APIView):
                 for i in range(1, duration + 1):
                     payment_date = current_time
                     repayment_schedule = total_repayment_amount_per_schedule + (principal_outstanding * (interest_rate / 100))
+                    principal_plus_interest += repayment_schedule                    
                     if loan_obj.loan_duration_period == 'Days':
                         payment_date = current_time + relativedelta(days=i)
                     elif loan_obj.loan_duration_period == 'Weeks':
@@ -789,6 +823,12 @@ class ApproveOrDeclineLoan(APIView):
                         amount=repayment_schedule,
                         status='pending')
                     principal_outstanding -= total_repayment_amount_per_schedule
+                    total_loan_fees = 0.0
+                    for loan_fee in loan_fees:
+                        total_loan_fee += loan_fee
+                    loan_obj.loan_fees = total_loan_fee 
+                    loan_obj.interest = principal_plus_interest - total_loan_fee
+                    loan_obj.save()               
                 return Response({"message": "loan has been approved"})
 
 
