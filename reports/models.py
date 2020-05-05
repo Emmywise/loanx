@@ -361,6 +361,7 @@ class LoanBorrowerReport(models.Model):
 
     # class Meta:
     #     order = ['-borrower__id']
+    #     order_by = ['-borrower__id']
 
 
 class LoanReport(models.Model):

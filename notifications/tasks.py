@@ -51,6 +51,17 @@ def invite_borrowers():
         recepient = borrower.email_address
         send_mail(purpose, sender, recepient)
 
+
+# @shared_task
+# def apply_penalty_matured_loans():
+#     filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today()).filter(remaining_balance__gt = 0)
+#     if (len(filtered_loans) != 0):
+#         for f in filtered_loans:
+
+#         return "code ran successfully"
+#     return "code ran successfully"
+
+
 @shared_task
 def mark_overdue_loans():
     filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today()).filter(remaining_balance__gt = 0)
@@ -161,58 +172,121 @@ def LogLoansReleased(branch):
     return total
 
 def LogLoanRepayments(branch):
-    total = 0
+    principal_amount = LogLoansReleased(branch)
+    total = 0.0
+    principal_repayments = 0.0
     all_loan_repayments = LoanRepayment.objects.filter(branch=branch)
     if len(all_loan_repayments) > 0:
         for each_loan_repayment in all_loan_repayments:
             total += each_loan_repayment.amount
-        return total
+        if total > principal_amount:
+            principal_repayments = total
+        else:
+            principal_repayments = principal_amount
     else:
-        return 0
+        pass
+    #getting the interest
+    """principal repayment is total amount of principal repaid"""
+    """ total is all the money repaid"""
+    """principal amount is all the money released"""
+    """principal plus interest is all the principal plus interest delivered"""
+    """interest repayment is 0 if all money repaid is less than or equal to principal amount, else
+    it is equal to the total money repaid minus principal repayment and should be equal to principal + interest - prin
+    cipal if it is greater than it"""
+    all_loans_released = Loan.objects.filter(branch=branch).exclude(status="denied").exclude(status="processing")
+    principal_plus_interest = 0.0
+    principal_plus_interest_loan_fees = 0.0
+    principal_plus_interest_loan_fees_penalty = 0.0
+    for each_loan_released in all_loans_released:
+        each_principal_plus_interest = each_loan_released.interest + each_loan_released.principal_amount
+        principal_interest_loanfees = each_loan_released.interest + each_loan_released.principal_amount + each_loan_released.loan_fees
+        principal_penalty = each_loan_released.interest + each_loan_released.principal_amount + each_loan_released.loan_fees + penalty_amount
+        principal_plus_interest += each_principal_plus_interest
+        principal_plus_interest_loan_fees += principal_interest_loanfees
+        principal_plus_interest_loan_fees_penalty += principal_penalty
+
+    interest_repayment = 0.0
+    if total <= principal_amount:
+        interest_repayment = 0.0
+    elif total > principal_amount and total <= (principal_plus_interest - principal_amount):
+        interest_repayment = total - principal_amount
+    else:
+        interest_repayment = principal_plus_interest - principal_amount
+    """ loan fees """
+    if total >= principal_plus_interest_loan_fees:
+        loan_fee_repayment = 0.0
+    elif total > principal_plus_interest and total < principal_plus_interest_loan_fees:
+        loan_fee_repayment = total - principal_plus_interest
+    else:
+        loan_fee_repayment = principal_plus_interest_loan_fees - principal_plus_interest
+    """ penalty repayment"""
+    if total >= principal_plus_interest_loan_fees_penalty:
+        penalty_repayment = 0.0
+    elif total > principal_plus_interest_loan_fees and total < principal_plus_interest_loan_fees_penalty:
+        penalty_repayment = total - principal_plus_interest_loan_fees
+    else:
+        penalty_repayment = principal_plus_interest_loan_fees_penalty - principal_plus_interest_loan_fees
+    return {"principal_repayment":principal_repayments, "interest_repayment":interest_repayment, "loan_fee_repayment":loan_fee_repayment, "penalty_repayment":penalty_repayment}
+
 
 def LogDeposits(branch):
     savings_transactions = SavingsTransaction.objects.filter(branch=branch)
-    st_total = 0 
+    st_total = 0.0 
+    st_tranfers_in = 0.0
     for savings_transaction in savings_transactions:
         if savings_transaction.transaction_type == 'Deposit' and savings_transaction.amount != None:
             st_total += savings_transaction.amount
+    for savings_transaction in savings_transactions:
+        if savings_transaction.transaction_type == 'Transfer In' and savings_transaction.amount != None:
+            st_tranfers_in += savings_transaction.amount
     savings_products = SavingsProduct.objects.filter(branch=branch)
-    sp_total = 0
+    sp_total = 0.0
+    sp_transfer_in = 0.0
     for savings_product in savings_products:
         if savings_product.deposit != None:
             sp_total += savings_product.deposit
-    csm = CashSafeManagement.objects.get(branch = branch)
-    cash_sources = CashSource.objects.filter(cash_safe_management = csm)
-    if len(cash_sources) > 0:
-        cs_total = 0
-        for cash_source in cash_sources:
-            if cash_source.credit != None:
-                cs_total += cash_source.credit
-        return st_total + sp_total + cs_total
-    else:
-        return 0
+        elif savings_product.transfer_in != None:
+            sp_transfer_in += savings_product.transfer_in
+    # csm = CashSafeManagement.objects.get(branch = branch)
+    # cash_sources = CashSource.objects.filter(cash_safe_management = csm)
+    # if len(cash_sources) > 0:
+    #     cs_total = 0
+    #     for cash_source in cash_sources:
+    #         if cash_source.credit != None:
+    #             cs_total += cash_source.credit
+    return {"deposits":st_total + sp_total, "transfers_in":  st_tranfers_in + sp_transfer_in}
+    # else:
+    #     return 0
 
 def LogWithdrawals(branch):
     savings_transactions = SavingsTransaction.objects.filter(branch=branch)
-    st_total = 0 
+    st_total = 0
+    st_tranfers_out = 0.0 
     for savings_transaction in savings_transactions:
         if savings_transaction.transaction_type == 'Withdrawal' and savings_transaction.amount != None:
             st_total += savings_transaction.amount
+        elif savings_transaction.transaction_type == 'Transfer Out' and savings_transaction.amount != None:
+            st_tranfers_out += savings_transaction.amount
     savings_products = SavingsProduct.objects.filter(branch=branch)
     sp_total = 0
+    sp_tranfers_out = 0.0 
     for savings_product in savings_products:
         if savings_product.withdrawal != None:
             sp_total += savings_product.withdrawal
-    csm = CashSafeManagement.objects.get(branch = branch)
-    cash_sources = CashSource.objects.filter(cash_safe_management = csm)
-    if len(cash_sources) > 0:
-        cs_total = 0
-        for cash_source in cash_sources:
-            if cash_source.debit != None:
-                cs_total += cash_source.debit
-        return st_total + sp_total + cs_total
-    else:
-        return 0
+        elif savings_product.transfer_out != None:
+            sp_transfer_out += savings_product.transfer_out
+    return {"withdrawals":st_total + sp_total, "transfers_out":  st_tranfers_out + sp_transfer_out}
+    # csm = CashSafeManagement.objects.get(branch = branch)
+    # cash_sources = CashSource.objects.filter(cash_safe_management = csm)
+    # if len(cash_sources) > 0:
+    #     cs_total = 0
+    #     for cash_source in cash_sources:
+    #         if cash_source.debit != None:
+    #             cs_total += cash_source.debit
+    #st_total + sp_total 
+    #     return st_total + sp_total + cs_total
+    # else:
+    #     return 0
 
 
 #SavingsTransaction__transaction_type
@@ -229,13 +303,26 @@ def SaveCashFlow():
             each_cash_flow.branch_capital = each_branch.capital
         else:
             each_cash_flow.branch_capital = 0
+        log_loan_repayments = LogLoanRepayments(each_branch)
+        log_deposits = LogDeposits(each_branch)
+        log_loans_released = LogLoansReleased(each_branch)
+        log_withdrawals = LogWithdrawals(each_branch)
+        each_cash_flow.loan_principal_repayments = log_loan_repayments['principal_repayment']
+        each_cash_flow.loan_interest_repayments = log_loan_repayments["interest_repayment"]
+        each_cash_flow.loan_penalty_repayments = log_loan_repayments["penalty_repayment"]
+        each_cash_flow.loan_fees_repayments = log_loan_repayments["loan_fee_repayment"]
+        each_cash_flow.deductable_loan_fees = log_loan_repayments["loan_fee_repayment"]
+        each_cash_flow.savings_deposits = log_loan_repayments["deposits"]
+        each_cash_flow.transfer_in = log_deposits["transfers_in"]
         each_cash_flow.expenses = LogExpenses(each_branch)
         each_cash_flow.payroll = LogPayroll(each_branch)
         each_cash_flow.loan_released = LogLoansReleased(each_branch)
-        each_cash_flow.loan_repayment = LogLoanRepayments(each_branch)
-        each_cash_flow.deposit = LogDeposits(each_branch) 
-        each_cash_flow.withdrawal = LogWithdrawals(each_branch)
+        each_cash_flow.savings_withdrawals = log_withdrawals["withdrawals"]
+        each_cash_flow.savings_transfer_out = log_withdrawals["transfers_out"]
+        #each_cash_flow.loan_repayment = LogLoanRepayments(each_branch)
+        #each_cash_flow.deposit = LogDeposits(each_branch) 
+        #each_cash_flow.withdrawal = LogWithdrawals(each_branch)
         #b = CashFlow(name='Beatles Blog', tagline='All the latest Beatles news.')
         each_cash_flow.save()
-        print("yeah")
+
     return "code ran successfully"
