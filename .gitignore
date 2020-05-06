@@ -1,6 +1,14 @@
 venv
 env
 db.sqlite3
+.vscode
+GFG.pdf
+invoic.pdf
+invoice2.pdf
+invoice6.pdf
+loanx.pdf
+templat.pdf
+template.pdf
 borrowers/__pycache__/views.cpython-38.pyc
 borrowers/__pycache__/views.cpython-38.pyc
 loan_management_system/__pycache__/urls.cpython-38.pyc

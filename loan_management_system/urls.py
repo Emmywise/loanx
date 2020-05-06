@@ -30,7 +30,8 @@ from staffs.views import PayrollViewSet
 from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
     CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,
-    OtherIncomeViewSet, OtherIncomeTypeViewSet
+    OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween,
+    BorrowersReport
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
@@ -43,8 +44,7 @@ from loans.views import (
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
     DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays,
-    ApproveOrDeclineLoan, ManualRepayment, SaveAuthCode, AutomaticRepayment
-    )
+    ApproveOrDeclineLoan, ManualRepayment, SaveAuthCode, AutomaticRepayment)
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
@@ -148,6 +148,8 @@ urlpatterns = [
     path('api/make_automatic_repayment/', AutomaticRepayment.as_view()),
     path('api/cash_flow_accumulated/', CashFlowAccumlated.as_view()),
     path('api/cash_flow_monthly/', CashFlowMonthly.as_view()),
+    path('api/borrowers_report/', BorrowersReport.as_view()),
+    path('api/filter_borrowers_report/',ReportsBetween.as_view())
     #path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 

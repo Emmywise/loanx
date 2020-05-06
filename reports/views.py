@@ -5,15 +5,23 @@ from django.utils import timezone
 from django.db.models import Q
 from fine_search.fine_search import perform_search_queryset
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import (
     CalendarEventEmail, CalendarEvent, CalendarLog,
-    OtherIncomeType, OtherIncome, OtherIncomeDocuments
+    OtherIncomeType, OtherIncome, OtherIncomeDocuments, LoanBorrowerReport
 )
+
 from .serializers import (
     CalendarEventEmailSerializer, CalendarEventSerializer, 
     CalendarLogSerializer, OtherIncomeTypeSerializer,
-    OtherIncomeSerializer, OtherIncomeDocumentsSerializer
+    OtherIncomeSerializer, OtherIncomeDocumentsSerializer,
+    LoanBorrowerReportSerializer
 )
+from loans.models import Loan
+from borrowers.models import Borrower
+
 # Create your views here.
 
 
@@ -133,3 +141,104 @@ class OtherIncomeDocumentsViewSet(ModelViewSet):
             queryset = queryset.filter(income__pk=income)
         queryset = filter_date(self.request, queryset)
         return queryset
+
+class BorrowersReport(APIView):
+    def post(self, request, pk=None):
+       
+        borrower = request.data.get('borrower')
+        borrower_instance = Borrower.objects.get(pk = int(borrower))
+        loans_released = Loan.objects.filter(borrower = borrower_instance).exclude(status = "processing").exclude(status = "denied")
+        due_loans = Loan.objects.filter(status = "past maturity")
+        no_loan_released = len(loans_released)
+        principal_released = 0
+        amount_paid = 0
+        due_loans_principal = 0
+        due_loans_interest = 0
+        due_loans_fees = 0
+        due_loans_penalty = 0
+        due_loans_total = 0
+        payments_principal = 0
+        payments_interest = 0
+        payments_fees = 0
+        payments_penalty = 0
+        p_i_released = 0
+        p_i_f_released = 0
+        p_i_f_p_released = 0
+        #try except to avoid breaking for people without loans released
+        # try:
+        for each_loan_released in loans_released:
+            principal_released += each_loan_released.principal_amount
+            p_i_released += (each_loan_released.principal_amount + each_loan_released.interest)
+            p_i_f_released += (each_loan_released.principal_amount + each_loan_released.interest + each_loan_released.loan_fees)
+            p_i_f_p_released += (each_loan_released.principal_amount + each_loan_released.interest + each_loan_released.loan_fees + each_loan_released.penalty_amount)
+            amount_paid += each_loan_released.amount_paid
+            
+        # except:
+        #     pass
+        principal_at_risk = principal_released - amount_paid
+        #where amount paid is higher than principal released
+        if principal_at_risk < 0.00:
+            principal_at_risk = 0.00
+        # try:
+        for each_due_loan in due_loans:
+            due_loans_principal += each_due_loan.principal_amount
+            due_loans_interest += each_due_loan.interest
+            due_loans_fees += each_due_loan.loan_fees
+            due_loans_penalty += each_due_loan.penalty_amount
+            due_loans_total = due_loans_principal + due_loans_interest + due_loans_fees + due_loans_penalty
+        # except:
+        #     pass
+        if amount_paid < principal_released:
+            payments_principal = principal_released - amount_paid
+            #payments interest, fees and penalties retain values of 0.00
+        elif amount_paid > principal_released and amount_paid < p_i_released:
+            payments_principal = principal_released
+            payments_interest = p_i_released - amount_paid
+        elif amount_paid > p_i_released and amount_paid < p_i_f_released:
+            payments_principal = principal_released
+            payments_interest = p_i_released - principal_released
+            payments_fees = p_i_f_released - amount_paid
+        elif amount_paid > p_i_f_released and amount_paid < p_i_f_p_released:
+            payments_principal = principal_released
+            payments_interest = p_i_released - principal_released
+            payments_fees = p_i_f_released - p_i_released
+            payments_penalty = p_i_f_p_released - amount_paid
+        elif amount_paid > p_i_f_p_released:
+            payments_principal = principal_released
+            payments_interest = p_i_released - principal_released
+            payments_fees = p_i_f_released - p_i_released
+            payments_penalty = p_i_f_p_released - p_i_f_released
+        else:
+            pass 
+        payments_total = payments_principal + payments_interest + payments_fees + payments_penalty
+        data = {
+        'borrower': borrower,
+        'no_loan_released': no_loan_released,
+        'principal_released': principal_released,
+        'principal_at_risk' : principal_at_risk,
+        'due_loans_principal' : due_loans_principal,
+        'due_loans_interest' : due_loans_interest,
+        'due_loans_fees' : due_loans_fees,
+        'due_loans_penalty' : due_loans_penalty,
+        'due_loans_total' : due_loans_total,
+        'payments_principal': payments_principal,
+        'payments_interest' : payments_interest,
+        'payments_fees': payments_fees,
+        'payments_penalty': payments_penalty,
+        'payments_total': payments_total
+        }
+        serializer = LoanBorrowerReportSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)    
+    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ReportsBetween(APIView):
+    def get(self, request, pk=None):
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
+        filtered_reports = LoanBorrowerReport.objects.filter(date__gt = start_date).filter(date__lt = end_date)
+        serializer = LoanBorrowerReportSerializer(filtered_reports, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

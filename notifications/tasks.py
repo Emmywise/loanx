@@ -12,7 +12,7 @@ from django.utils.crypto import get_random_string
 from loans.models import Loan, LoanRepayment
 from savings_investments.models import SavingsAccount, SavingsProduct, CashSource, SavingsTransaction, CashSafeManagement
 from borrowers.models import InviteBorrower
-from accounting.models import CashFlow
+from accounting.models import CashFlow, ProfitLoss, BalanceSheet
 from commons.models import Expense
 from staffs.models import Payroll
 from accounts.models import Branch
@@ -171,6 +171,27 @@ def LogLoansReleased(branch):
         total += each_loan_released.principal_amount
     return total
 
+def LogCurrentLoans(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).filter(status="current")
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.repayment
+    return total
+
+def LogPastDue(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).filter(status="missed repayment").filter(remaining_balance__gt = 0.00)
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.repayment
+    return total
+
+def LogRestructuredLoans(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).filter(status="restructured")
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.repayment
+    return total
+
 def LogLoanRepayments(branch):
     principal_amount = LogLoansReleased(branch)
     total = 0.0
@@ -326,3 +347,38 @@ def SaveCashFlow():
         each_cash_flow.save()
 
     return "code ran successfully"
+
+
+@shared_task
+def SaveProfitLoss():
+    branch = Branch.objects.all()
+    for each_branch in branch:
+        each_profit_loss = ProfitLoss()
+        each_profit_loss.branch = each_branch
+        if each_branch.capital != None:
+            each_profit_loss.branch_capital = each_branch.capital
+        else:
+            each_profit_loss.branch_capital = 0
+        log_loan_repayments = LogLoanRepayments(each_branch)
+        each_profit_loss.interest_repayment = log_loan_repayments["interest_repayment"]
+        each_profit_loss.deductable_fees_repayment = log_loan_repayments["loan_fee_repayment"]
+        each_profit_loss.penalty_repayment = log_loan_repayments["penalty_repayment"]
+        each_profit_loss.payroll = LogPayroll(each_branch)
+        each_profit_loss.save()
+
+
+@shared_task
+def SaveBalanceSheet():
+    branch = Branch.objects.all()
+    for each_branch in branch:
+        each_profit_loss = ProfitLoss()
+        each_profit_loss.branch = each_branch
+        if each_branch.capital != None:
+            each_profit_loss.branch_capital = each_branch.capital
+        else:
+            each_profit_loss.branch_capital = 0
+        each_profit_loss.current = LogCurrentLoans(each_branch)
+        each_profit_loss.past_due = LogPastDue(each_branch)
+        each_profit_loss.restructured = LogRestructuredLoans(each_branch)
+        each_profit_loss.save()
+
