@@ -22,27 +22,20 @@ from .tasks import send_sms, send_mail_task
 
 # Create your views here.
 class SendSMS(APIView):
-    def post(self, request):
+    def post(self, request, pk=None):
+        recepient = request.data.get('recepient')
+        sender = request.data.get('sender')
+        purpose = request.data.get('purpose')
+        body = request.data.get('body')
+        msg_status = SendSMSAPI(recepient, sender, body) 
         serializer_class = SendSMSSerializer
-        recepient = request.data.get("recepient")
-        sender = request.data.get("sender")
-        purpose = request.data.get("purpose")
-        msg_status = SendSMSAPI(recepient, sender) 
-        try:
-            if msg_status == True:
-                message = SMS.objects.create(status="sent", message_purpose=purpose)
-                message.save()
-            return {"message": "Success", "status": status.HTTP_200_OK}
-        except:
-            return {"message": "Failed", "status": status.HTTP_400_BAD_REQUEST}
+        if msg_status == True:
+            message = SMS.objects.create(status="sent", message_purpose=purpose)
+            message.save()
+            return Response({"message": "Success", "status": status.HTTP_200_OK})
+        else:
+            return Response({"message": "Failed", "status": status.HTTP_400_BAD_REQUEST})
             
-
-    def get(self, request):
-        sms = SMS.objects.all()
-        send_mail_task.delay("hello from leke","lms@lms.com","lexmill99@gmail.com")
-
-        serializer = SendSMSSerializer(sms, many=True)
-        return Response(serializer.data)
 
 class SendEmail(APIView):
     def send_mail(self, purpose, sender, recepient):
@@ -63,15 +56,6 @@ class SendEmail(APIView):
         recepient = request.data.get("recepient")
         sender = request.data.get("sender")
         purpose = request.data.get("purpose")
-        #msg_status = SendSMSAPI(recepient, sender) 
-        #self.send_mail
-        #return Response({"message": "Success"}, status=status.HTTP_200_OK)
         return Response(self.send_mail(purpose, sender, recepient), status=status.HTTP_201_CREATED)
-        # try:
-        #     if msg_status == True:
-        #         message = SMS.objects.create(status="sent", message_purpose=purpose)
-        #         message.save()
-        #     return Response({"message": "Success"}, status=status.HTTP_200_OK)
-        # except:
-        #     return Response({"message": "Failed"}, status=status.HTTP_400_BAD_REQUEST)
+
         

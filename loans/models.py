@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 import os
+import decimal
 import datetime
 from django.core.exceptions import ValidationError
 from django.db.models.signals import pre_save, post_save
@@ -14,7 +15,7 @@ from accounts.models import Profile, Branch
 def validate_file_extension(value):
     ext = os.path.splitext(value.name)[1]  # [0] returns path+filename
     valid_extensions = ['.pdf', '.doc', '.docx',
-                        '.jpg', '.png', '.xlsx', '.xls']
+                        '.jpg', '.png', '.xlsx', '.xls', '.jpeg']
     if not ext.lower() in valid_extensions:
         raise ValidationError('Unsupported file extension.')
 
@@ -113,10 +114,10 @@ class Loan(models.Model):
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
     interest_mode = models.CharField(
-        choices=interest_type_types, max_length=400, blank=True, null=True)
+        choices=interest_type_types, max_length=400, blank=True, null=True, default='Percentage Based')
     duration = models.PositiveIntegerField(default=0)
     status = models.CharField(
-        max_length=30, choices=status_choices, default='pending')
+        max_length=30, choices=status_choices, default='processing')
     request_date = models.DateField(auto_now=True)
     loan_release_date = models.DateField(blank=True, null=True)
     direct_debit = models.BooleanField(default=False)
@@ -128,8 +129,7 @@ class Loan(models.Model):
         max_length=400, blank=True, null=True)
     loan_interest_percentage_period = models.CharField(
         choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
-    loan_duration = models.CharField(
-        max_length=400, blank=True, null=True)
+    loan_duration = models.IntegerField(default=0)
     loan_duration_period = models.CharField(choices=loan_duration_period_types,
                                             max_length=400, blank=True, null=True)
 
@@ -138,9 +138,9 @@ class Loan(models.Model):
     interest_start_date = models.DateField(blank=True, null=True)
 
     maturity_date = models.DateField(blank=True, null=True)
-    repayment_amount = models.DecimalField(max_digits=100, decimal_places=2)
-    amount_paid = models.DecimalField(max_digits=100, decimal_places=2, default=0.00)
-    remaining_balance = models.DecimalField(max_digits=100, decimal_places=2)
+    repayment_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    amount_paid = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    remaining_balance = models.DecimalField(max_digits=100, decimal_places=2, default = 0)
     interest_on_prorata = models.BooleanField(default=False)
     released = models.BooleanField(default=False)
     maturity = models.BooleanField(default=False)
@@ -152,10 +152,12 @@ class Loan(models.Model):
         max_digits=10, decimal_places=2, blank=True, null=True)
     staff_permission_disbursed = models.BooleanField(default=True)
     staff_permission_accepted = models.BooleanField(default=False)
+    disbursed = models.BooleanField(default=False)
     bvn = models.CharField(max_length=20, blank=True, null=True)
-    interest = models.DecimalField(max_digits=100, decimal_places=2)
-    loan_fees = models.DecimalField(max_digits=100, decimal_places=2)
+    interest = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
+    loan_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     penalty_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0.0)
+    loan_score = models.IntegerField(default=0, blank=True, null=True)
 
     def get_balance(self):
         return self.repayment_amount - self.amount_paid
@@ -166,12 +168,36 @@ class Loan(models.Model):
     def maturity(self):
         return self.maturity_date <= datetime.date.today()
 
+@receiver(pre_save, sender=Loan)
+def update_interest_rate(sender, instance, **kwargs):
+    if instance.interest_rate == None:
+        instance.interest_rate = instance.loan_type.interest_rate
+    if instance.penalty_rate == None:
+        instance.penalty_rate = instance.loan_type.penalty_rate
+
+@receiver(pre_save, sender=Loan)
+def update_balance(sender, instance, **kwargs):
+    instance.remaining_balance = decimal.Decimal(instance.repayment_amount) - decimal.Decimal(instance.amount_paid)
+    if instance.remaining_balance == 0:
+        instance.status = "fully paid"
+    instance.loan_score = instance.borrower.loan_score
+
+ 
 
 class LoanOfficer(models.Model):
-    loan = models.ManyToManyField(Loan, blank=True, null=True)
+    #loan = models.ManyToManyField(Loan, blank=True, null=True)
+    members = models.ManyToManyField(Loan, through="LoanMembership")
     name = models.CharField(max_length=128, blank=True, null=True)
     phonenumber = models.CharField(max_length=128, blank=True, null=True)
 
+
+
+class LoanMembership(models.Model):
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
+    loan_officer = models.ForeignKey(LoanOfficer, on_delete=models.CASCADE)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return self.loan.borrower.first_name + " " + "in" + " "+ self.loan_officer.name
 
 class LoanRepayment(models.Model):
     time_to_post = (
@@ -278,7 +304,7 @@ class LoanDisbursement(models.Model):
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
     disbursement_mode = models.CharField(
         choices=disbursement_mode_types, max_length=100)
-    amount = models.DecimalField(max_digits=100, decimal_places=2)
+    amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     duration = models.PositiveIntegerField(blank=True, null=True)
     loan_interest_percentage = models.CharField(
         max_length=400, blank=True, null=True)
@@ -286,16 +312,21 @@ class LoanDisbursement(models.Model):
         max_length=400, blank=True, null=True)
     loan_interest_percentage_period = models.CharField(
         choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
-    loan_duration = models.CharField(
-        max_length=400, blank=True, null=True)
     loan_duration_period = models.CharField(choices=loan_duration_period_types,
                                             max_length=400, blank=True, null=True)
+    loan_officer = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING)
+    date_disbursed = models.DateField(auto_now_add=True, null=True, blank=True)
+
+@receiver(pre_save, sender=LoanDisbursement)
+def update_balance(sender, instance, **kwargs):
+    instance.loan.disbursed = True
+
 
 
 class LoanComment(models.Model):
-    loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
+    loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     text = models.CharField(max_length=128, blank=True, null=True)
-    date = models.DateField(blank=True, null=True)
+    date = models.DateField(auto_now=True)
     author = models.ForeignKey(LoanOfficer, on_delete=models.DO_NOTHING)
 
 
@@ -432,7 +463,16 @@ class LoanScheduler(models.Model):
     )
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     description = models.CharField(max_length=30, blank=True, null=True)
-    date = models.DateTimeField()
+    date = models.DateField()
+    principal = models.FloatField(max_length=30, default=0)
+    interest = models.FloatField(max_length=30, default=0)
+    fees = models.FloatField(max_length=30, default=0)
+    penalty = models.FloatField(max_length=30, default=0)
+    due = models.FloatField(max_length=30, default=0)
+    paid = models.FloatField(max_length=30, default=0)
+    pending_due = models.FloatField(max_length=30, default=0)
+    total_due = models.FloatField(max_length=30, default=0)
+    principal_due = models.FloatField(max_length=30, default=0)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     status = models.CharField(max_length=30, choices=loan_scheduler_choices)
 

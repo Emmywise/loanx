@@ -7,30 +7,34 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework import status
 
 from .models import *
-from loans.models import Loan
-from loans.serializers import LoanSerializer
+from loans.models import Loan, LoanRepayment
+from loans.serializers import LoanSerializer, LoanRepaymentSerializer
 from .serializers import *
 from savings_investments.models import SavingsAccount
 from savings_investments.serializers import SavingsAccountSerializer
 import cloudinary.uploader
 
-@api_view(['GET', 'DELETE', 'PUT'])
+@api_view(['GET', 'DELETE', 'PATCH'])
 def get_delete_update_borrower(request, pk):
     try:
         borrower = Borrower.objects.get(pk=pk)
     except Borrower.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    # get details of a single restaurant
     if request.method == 'GET':
-        serializer = RestaurantSerializer(borrower)
+        serializer = BorrowerSerializer(borrower)
         return Response(serializer.data)
-    # delete a single restaurant
+
+    elif request.method == 'PATCH':
+        serializer = BorrowerSerializer(borrower, data=request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
     elif request.method == 'DELETE':
-        return Response({})
-    # update details of a single restaurant
-    elif request.method == 'PUT':
-        return Response({})
+        borrower.delete()
+        return Response("Borrower deleted successfully", status=204)
 
 
 @api_view(['GET', 'POST'])
@@ -69,10 +73,8 @@ def get_post_borrower(request):
             'is_activated': request.data.get('is_activated'),
             'borrower_group': request.data.get('borrower_group')
         }
-        print(data['borrower_photo'])
         upload_data = cloudinary.uploader.upload(data['borrower_photo'])
         data['borrower_photo'] = upload_data['url']
-        print(data)
         serializer = BorrowerSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -80,19 +82,26 @@ def get_post_borrower(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'DELETE', 'PUT'])
+@api_view(['GET', 'DELETE', 'PATCH'])
 def get_delete_update_borrower_group(request, pk):
     try:
         borrower_group = BorrowerGroup.objects.get(pk=pk)
     except BorrowerGroup.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
-        serializer = BorrowerGroupSerializer(borrower)
+        serializer = BorrowerGroupSerializer(borrower_group)
         return Response(serializer.data)
+
+    elif request.method == 'PATCH':
+        serializer = BorrowerGroupSerializer(borrower_group, data=request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
     elif request.method == 'DELETE':
-        return Response({})
-    elif request.method == 'PUT':
-        return Response({})
+        borrower_group.delete()
+        return Response("Borrower group deleted successfully", status=204)
 
 
 @api_view(['GET', 'POST'])
@@ -116,6 +125,27 @@ def get_post_borrower_group(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET', 'POST'])
+def add_to_group(request):
+    # get all restaurants
+    if request.method == 'GET':
+        membership = Membership.objects.all()
+        serializer = MembershipSerializer(membership, many=True)
+        return Response(serializer.data)
+    # insert a new record for a restaurant
+    elif request.method == 'POST':
+        data = {
+            'borrower': request.data.get('borrower'),
+            'borrower_group': request.data.get('borrower_group'),
+
+        }
+        serializer = MembershipSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['GET'])
 def SearchBorrowerGroup(request):
     # get all restaurants
@@ -133,21 +163,15 @@ def IndividualOpenLoans(request):
     if request.method == 'GET':
         members_loan = []
         borrower_group = BorrowerGroup.objects.get(pk=int(id))
-        group_members = borrower_group.member.all()
+        group_members = borrower_group.members.all()
         for g in group_members:
             member_loan = []
-            member_loan = Loan.objects.filter(borrower=g.pk, status="current")
-            #print(member_loan[0])
+            member_loan = Loan.objects.filter(borrower=g.pk).exclude(status="denied").exclude(status="processing").exclude(status="fully paid")
             if(len(member_loan)>0):
                 for unit in member_loan:               
                     members_loan.append(unit)  
             else:
                 return Response("No response")  
-            #print(unit.member)
-            #members_loan.append(unit.member)
-        #print(members_loan)
-        # members = borrower_group.member
-        # print(members)
         serializer = LoanSerializer(members_loan, many=True)
         return Response({unit.borrower.id: serializer.data})
 
@@ -156,25 +180,32 @@ def IndividualRepayments(request):
     id = request.GET.get("id")
     # get all restaurants
     if request.method == 'GET':
+        total = []
         members_loan = []
+        result = []
         borrower_group = BorrowerGroup.objects.get(pk=int(id))
-        group_members = borrower_group.member.all()
+        group_members = borrower_group.members.all()
         for g in group_members:
             member_loan = []
-            member_loan = Loan.objects.filter(borrower=g.pk, status="fully paid")
-            #print(member_loan[0])
-            if(len(member_loan)>0):
-                for unit in member_loan:               
-                    members_loan.append(unit)  
-            else:
-                return Response("No response")  
-            #print(unit.member)
-            #members_loan.append(unit.member)
-        #print(members_loan)
-        # members = borrower_group.member
-        # print(members)
-        serializer = LoanSerializer(members_loan, many=True)
-        return Response({unit.borrower.id: serializer.data})
+            repayments = []
+            member_loan = Loan.objects.filter(borrower=g.pk).exclude(status="denied").exclude(status="processing").exclude(status="fully paid")
+            for each_loan in member_loan:
+                loan_rts = []
+                loan_repayments = LoanRepayment.objects.filter(loan=each_loan)
+                if len(loan_repayments) > 0:
+                    unit_r = []
+                    for each_loan_repayment in loan_repayments:
+                        unit_r.append(each_loan_repayment)
+                    loan_rts.append({each_loan_repayment.pk: LoanRepaymentSerializer(unit_r, many=True).data})
+                total.append(({g.id: loan_rts}))
+
+            # if(len(member_loan)>0):
+            #     for unit in member_loan:               
+        #             members_loan.append(unit)  
+        #     else:
+        #         return Response("No response")  
+        # serializer = LoanSerializer(members_loan, many=True)
+        return Response(total)
 
 
 @api_view(['GET'])
@@ -207,21 +238,6 @@ def SearchByWorkingStatus(request, status=None):
         return Response(serializer.data)
 
 
-# @api_view(['GET'])
-# def BorrowersFiles(request, pk=None):
-#     #id = request.GET.get("id")
-#     # get all restaurants
-#     if request.method == 'GET':
-#         #members_loan = []
-#         borrower = Borrower.objects.filter(working_status = status)
-#         # for unit in borrower_group:
-#         #     print(unit.member)
-#         #     members_loan.append(unit.member)
-#         #print(members_loan)
-#         # members = borrower_group.member
-#         # print(members)
-#         serializer = BorrowerSerializer(borrower, many=True)
-#         return Response(serializer.data)
 
 @api_view(['GET'])
 def MembersOfGroupLoans(request, pk=None):
@@ -234,16 +250,22 @@ def MembersOfGroupLoans(request, pk=None):
 @api_view(['GET', 'DELETE', 'PUT'])
 def get_delete_update_invite_borrower(request, pk):
     try:
-        invite_borrower = InviteBorrowerSerializer.objects.get(pk=pk)
+        invite_borrower = InviteBorrower.objects.get(pk=pk)
     except InviteBorrower.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
-        serializer = InviteBorrowerSerializer(borrower)
+        serializer = InviteBorrowerSerializer(invite_borrower)
         return Response(serializer.data)
+    elif request.method == 'PATCH':
+        serializer = InviteBorrowerSerializer(invite_borrower, data=request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
     elif request.method == 'DELETE':
-        return Response({})
-    elif request.method == 'PUT':
-        return Response({})
+        invite_borrower.delete()
+        return Response("Prospective Borrower deleted successfully", status=204)
 
 
 @api_view(['GET', 'POST'])

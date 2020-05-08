@@ -74,25 +74,43 @@ def compare_dates(date_from_api, date_by_loanee):
         return False
 
 
-def get_loan_score(phone_no, ref):
+def get_loan_score(phone_no, ref, firstname, surname, email, amount):
     url = 'https://api.onepipe.io/v1/loans/score'
     myobj = {
         'request_ref': ref,
         'transaction': {
-            'amount': '',
+            'amount': amount,
             'transaction_desc': 'Payment for services',
             'transaction_ref': ref,
             'currency': 'NGN',
             'algo_code': 'markovstats1.0',
             'customer': {
                 'customer_ref': phone_no,
-                'firstname': '',
-                'surname': '',
-                'email': '',
+                'firstname': firstname,
+                'surname': surname,
+                'email': email,
                 'mobile_no': phone_no
             }
         }
     }
+
+#     {
+#   "request_ref":"0000000009",
+#   "transaction": {
+#     "amount": "10000",
+#     "transaction_desc": "Payment for services",
+#     "transaction_ref": "0000000009",
+#     "currency": "NGN",
+#     "algo_code": "markovstats1.0",
+#     "customer":{
+#     	"customer_ref": "07062277804",
+#     	"firstname": "Toluwaleke",
+#   		"surname": "Ariyo",
+#     	"email": "lexmill99@gmail.com",
+#     	"mobile_no": "2347062277804"
+#     }
+#   }
+# }
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

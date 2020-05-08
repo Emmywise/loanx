@@ -346,7 +346,7 @@ class BalanceSheet(models.Model):
 
 class LoanBorrowerReport(models.Model):
     borrower = models.ForeignKey(Borrower, on_delete=models.CASCADE)
-    no_loan_released = models.PositiveIntegerField(default=0)
+    #no_loan_released = models.PositiveIntegerField(default=0)
     principal_released = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     principal_at_risk = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     due_loans_principal = models.DecimalField(max_digits=100, decimal_places=2, default=0)

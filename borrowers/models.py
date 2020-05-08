@@ -57,9 +57,9 @@ class Borrower(models.Model):
     state = models.CharField(
         max_length=400)
     zip_code = models.CharField(
-        max_length=400)
+        max_length=400, blank=True, null=True)
     land_line = models.CharField(
-        max_length=400)
+        max_length=400, blank=True, null=True)
     working_status = models.CharField(
         choices=working_status_choices, max_length=100)
     borrower_photo = CloudinaryField('image',null=True, blank=True)
@@ -68,13 +68,26 @@ class Borrower(models.Model):
     is_activated = models.BooleanField(default=False)
     loan_score = models.PositiveIntegerField(blank=True, null=True)
 
+    def __str__(self):
+        return self.first_name + " " + self.last_name
+
 
 class BorrowerGroup(models.Model):
     group_name = models.CharField(max_length=255)
     group_leader = models.ForeignKey(Borrower, null=True, blank=True, on_delete=models.DO_NOTHING, related_name='group_leader')
-    meeting_date = models.DateTimeField()
+    meeting_date = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
-    member = models.ManyToManyField(Borrower)
+    members = models.ManyToManyField(Borrower, through='Membership')
+    def __str__(self):
+        return self.group_name
+
+
+class Membership(models.Model):
+    borrower = models.ForeignKey(Borrower, on_delete=models.CASCADE)
+    borrower_group = models.ForeignKey(BorrowerGroup, on_delete=models.CASCADE)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return self.borrower.first_name + " " + "in" + " "+ self.borrower_group.group_name
 
 
 class InviteBorrower(models.Model):

@@ -22,21 +22,6 @@ def send_sms():
     return SendSMSAPI()
     
 
-# @shared_task
-# def send_mail(purpose, sender, recipient):
-#     mail_instance = SendEmail()
-#     #mail_instance.send_mail(invite new borrowers, )
-#     return mail_instance()
-
-def print_random_string():
-    # time.sleep(1)
-    print('random string')
-    return 'radafds'
-
-
-# @shared_task
-# def send_sms():
-#     return SendSMSAPI()
 
 @shared_task
 def send_mail_task(purpose, sender, recepient):
@@ -51,15 +36,9 @@ def invite_borrowers():
         recepient = borrower.email_address
         send_mail(purpose, sender, recepient)
 
-
-# @shared_task
-# def apply_penalty_matured_loans():
-#     filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today()).filter(remaining_balance__gt = 0)
-#     if (len(filtered_loans) != 0):
-#         for f in filtered_loans:
-
-#         return "code ran successfully"
-#     return "code ran successfully"
+@shared_task
+def mark_overdue_loan_schedules():
+    filtered_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today()).update(status="overdue")
 
 
 @shared_task

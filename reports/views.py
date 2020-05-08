@@ -148,7 +148,7 @@ class BorrowersReport(APIView):
         borrower = request.data.get('borrower')
         borrower_instance = Borrower.objects.get(pk = int(borrower))
         loans_released = Loan.objects.filter(borrower = borrower_instance).exclude(status = "processing").exclude(status = "denied")
-        due_loans = Loan.objects.filter(status = "past maturity")
+        due_loans = Loan.objects.filter(status = "past maturity").filter(borrower = borrower_instance)
         no_loan_released = len(loans_released)
         principal_released = 0
         amount_paid = 0
@@ -233,6 +233,21 @@ class BorrowersReport(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)    
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoanReport(APIView):
+    def post(self, request, pk=None):
+        loans_released = Loan.objects.filter(borrower = borrower_instance).exclude(status = "processing").exclude(status = "denied")
+        for each_loan_released in loans_released:
+            borrower = each_loan_released.borrower
+            principal_released = each_loan_released.principal_amount
+            #principal_at_risk =         
+            serializer = LoanBorrowerReportSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)    
+        
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ReportsBetween(APIView):
