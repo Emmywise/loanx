@@ -11,8 +11,8 @@ class SMS(models.Model):
     )
     message_purpose_choices = (
         ('to_all_borrowers', 'to_all_borrowers'),
-        ('delivered', 'delivered'),
-        ('failed', 'failed'),
+        # ('delivered', 'delivered'),
+        # ('failed', 'failed'),
     )
     date_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(

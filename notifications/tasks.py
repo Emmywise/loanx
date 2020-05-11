@@ -12,7 +12,7 @@ from django.utils.crypto import get_random_string
 from loans.models import Loan, LoanRepayment
 from savings_investments.models import SavingsAccount, SavingsProduct, CashSource, SavingsTransaction, CashSafeManagement
 from borrowers.models import InviteBorrower
-from accounting.models import CashFlow
+from accounting.models import CashFlow, ProfitLoss, BalanceSheet
 from commons.models import Expense
 from staffs.models import Payroll
 from accounts.models import Branch
@@ -22,21 +22,6 @@ def send_sms():
     return SendSMSAPI()
     
 
-# @shared_task
-# def send_mail(purpose, sender, recipient):
-#     mail_instance = SendEmail()
-#     #mail_instance.send_mail(invite new borrowers, )
-#     return mail_instance()
-
-def print_random_string():
-    # time.sleep(1)
-    print('random string')
-    return 'radafds'
-
-
-# @shared_task
-# def send_sms():
-#     return SendSMSAPI()
 
 @shared_task
 def send_mail_task(purpose, sender, recepient):
@@ -51,15 +36,9 @@ def invite_borrowers():
         recepient = borrower.email_address
         send_mail(purpose, sender, recepient)
 
-
-# @shared_task
-# def apply_penalty_matured_loans():
-#     filtered_loans = Loan.objects.filter(maturity_date__lte = datetime.date.today()).filter(remaining_balance__gt = 0)
-#     if (len(filtered_loans) != 0):
-#         for f in filtered_loans:
-
-#         return "code ran successfully"
-#     return "code ran successfully"
+@shared_task
+def mark_overdue_loan_schedules():
+    filtered_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today()).update(status="overdue")
 
 
 @shared_task
@@ -169,6 +148,27 @@ def LogLoansReleased(branch):
     all_loans_released = Loan.objects.filter(branch=branch).exclude(status="denied").exclude(status="processing")
     for each_loan_released in all_loans_released:
         total += each_loan_released.principal_amount
+    return total
+
+def LogCurrentLoans(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).filter(status="current")
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.repayment
+    return total
+
+def LogPastDue(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).filter(status="missed repayment").filter(remaining_balance__gt = 0.00)
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.repayment
+    return total
+
+def LogRestructuredLoans(branch):
+    total = 0
+    all_loans_released = Loan.objects.filter(branch=branch).filter(status="restructured")
+    for each_loan_released in all_loans_released:
+        total += each_loan_released.repayment
     return total
 
 def LogLoanRepayments(branch):
@@ -326,3 +326,38 @@ def SaveCashFlow():
         each_cash_flow.save()
 
     return "code ran successfully"
+
+
+@shared_task
+def SaveProfitLoss():
+    branch = Branch.objects.all()
+    for each_branch in branch:
+        each_profit_loss = ProfitLoss()
+        each_profit_loss.branch = each_branch
+        if each_branch.capital != None:
+            each_profit_loss.branch_capital = each_branch.capital
+        else:
+            each_profit_loss.branch_capital = 0
+        log_loan_repayments = LogLoanRepayments(each_branch)
+        each_profit_loss.interest_repayment = log_loan_repayments["interest_repayment"]
+        each_profit_loss.deductable_fees_repayment = log_loan_repayments["loan_fee_repayment"]
+        each_profit_loss.penalty_repayment = log_loan_repayments["penalty_repayment"]
+        each_profit_loss.payroll = LogPayroll(each_branch)
+        each_profit_loss.save()
+
+
+@shared_task
+def SaveBalanceSheet():
+    branch = Branch.objects.all()
+    for each_branch in branch:
+        each_profit_loss = ProfitLoss()
+        each_profit_loss.branch = each_branch
+        if each_branch.capital != None:
+            each_profit_loss.branch_capital = each_branch.capital
+        else:
+            each_profit_loss.branch_capital = 0
+        each_profit_loss.current = LogCurrentLoans(each_branch)
+        each_profit_loss.past_due = LogPastDue(each_branch)
+        each_profit_loss.restructured = LogRestructuredLoans(each_branch)
+        each_profit_loss.save()
+

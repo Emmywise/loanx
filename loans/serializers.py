@@ -1,21 +1,26 @@
 from rest_framework import serializers
-from .models import Loan, LoanComment, LoanOfficer, LoanFee, LoanCollateral, LoanAttachment
+from .models import Loan, LoanComment, LoanOfficer, LoanFee, LoanCollateral, LoanAttachment, LoanType
 from .models import (
     Loan, LoanComment, LoanRepayment,
     LoanCollateral, LoanGuarantor,
-    GuarantorFile, LoanDisbursement, LoanScheduler
+    GuarantorFile, LoanDisbursement, LoanScheduler, LoanMembership
 )
 
 from .models import (Loan, LoanComment, LoanOfficer, LoanFee,
 LoanCollateral, LoanAttachment, LoanRepayment, GuarantorFile, LoanGuarantor, LoanDisbursement)
 
 class LoanSerializer(serializers.ModelSerializer):
-    remaining_balance = serializers.ReadOnlyField(source="self.get_balance")
-    released = serializers.ReadOnlyField(source="self.released")
-    maturity = serializers.ReadOnlyField(source="self.maturity")
+    # remaining_balance = serializers.ReadOnlyField(source="self.get_balance")
+    # released = serializers.ReadOnlyField(source="self.released")
+    # maturity = serializers.ReadOnlyField(source="self.maturity")
     class Meta:
         fields = '__all__'
         model = Loan
+
+class LoanTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = LoanType
 
 
 class LoanCommentSerializer(serializers.ModelSerializer):
@@ -26,8 +31,17 @@ class LoanCommentSerializer(serializers.ModelSerializer):
 class LoanOfficerSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
-        model = LoanRepayment
+        model = LoanOfficer
 
+class LoanDisbursementSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = LoanDisbursement
+
+class LoanMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = LoanMembership
 
 class LoanCollateralSerializer(serializers.ModelSerializer):
 

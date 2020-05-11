@@ -29,22 +29,22 @@ from accounts.views import (
 from staffs.views import PayrollViewSet
 from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
-    CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,
-    OtherIncomeViewSet, OtherIncomeTypeViewSet
+    CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,CollectionReport,
+    OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween, LoanProductReport, DisbursementReport, OutstandingReport,
+    BorrowersReport, LoanReport, LoanOfficerReport, LoanArrearsAgingReport, CollectorReportStaff, FeesReport
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
     PrincipalOutstandingLoan, TotalOpenLoans, 
     InterestOutstandingLoan, FullyPaidLoans,
     LoanRepaymentViewSet, LoanCollateralViewSet,
-    LoanGuarantorViewSet, GuarantorFileViewSet,
+    LoanGuarantorViewSet, GuarantorFileViewSet, LoanTypeViewSet,
     RunBvnCheck, GetLoanScore,LoanDisbursementViewSet,
-    PrincipalOutstandingLoan, TotalOpenLoans, LoanOfficerList, LoanOfficerDetail,
+    LoanOfficerList, LoanOfficerDetail,FeesOutstandingLoan,
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
-    DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays,
-    ApproveOrDeclineLoan, ManualRepayment, SaveAuthCode, AutomaticRepayment
-    )
+    DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays, OverrideLoanMaturity,
+    ApproveOrDeclineLoan, ManualRepayment, SaveAuthCode, AutomaticRepayment, LoanToOfficer)
 from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
 from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
@@ -81,6 +81,7 @@ router.register('payroll', PayrollViewSet, 'payroll')
 
 router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
 router.register('loan-disbursement', LoanDisbursementViewSet, 'loan-disbursement')
+router.register('loan-type', LoanTypeViewSet, 'loan-type')
 router.register('loan-collateral', LoanCollateralViewSet, 'loan-collateral')
 router.register('loan-guarantor', LoanGuarantorViewSet, 'loan-guarantor')
 router.register('loan-guarantor-file', GuarantorFileViewSet, 'loan-guarantor-file')
@@ -129,14 +130,17 @@ urlpatterns = [
     path('api/reset-password/', ResetPassword.as_view()),
     path('notifications/', include('notifications.urls')) ,
     path('borrowers/', include('borrowers.urls')) ,
-    path('borrowers_group/', include('borrowers.urls')) ,
     path('loans/', LoanView.as_view()) ,
-    path('principal_outstanding_loan/', PrincipalOutstandingLoan.as_view()),
+    path('loans/<int:pk>/', LoanView.as_view()) ,
+    path('principal_outstanding_loans/', PrincipalOutstandingLoan.as_view()),
     path('total_open_loan/', TotalOpenLoans.as_view()),
+    path('override_maturity/', OverrideLoanMaturity.as_view()),
     path('loan_comments/', LoanCommentList.as_view()),
     path('loan_comments/<int:pk>', LoanCommentDetail.as_view()),
     path('loan_officers/', LoanOfficerList.as_view()),
     path('loan_officers/<int:pk>', LoanOfficerDetail.as_view()),
+    path('loan_to_officer/', LoanToOfficer.as_view()),
+    path('loan_to_officer/<int:pk>', LoanToOfficer.as_view()),
     path('interest_outstanding_loan/', InterestOutstandingLoan.as_view()),
     path('fully_paid_loan/', FullyPaidLoans.as_view()),
     path('api/bvn_check/', RunBvnCheck.as_view()),
@@ -145,6 +149,7 @@ urlpatterns = [
     path('search_borrower_group', SearchBorrowerGroup),
     path('individual_open_loans', IndividualOpenLoans),
     path('individual_repayments', IndividualRepayments),
+    path('fees_outstanding', FeesOutstandingLoan.as_view()),    
     path('borrowers_savings/', BorrowersSavings),
     path('search_by_working_status/<str:status>',SearchByWorkingStatus),
     path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),
@@ -164,6 +169,17 @@ urlpatterns = [
     path('api/make_automatic_repayment/', AutomaticRepayment.as_view()),
     path('api/cash_flow_accumulated/', CashFlowAccumlated.as_view()),
     path('api/cash_flow_monthly/', CashFlowMonthly.as_view()),
+    path('api/borrowers_report/', BorrowersReport.as_view()),
+    path('api/filter_borrowers_report/',ReportsBetween.as_view()),
+    path('api/loans_report/',LoanReport.as_view()),
+    path('api/loan_officer_report/',LoanOfficerReport.as_view()),
+    path('api/loan_officer_arrears_report/',LoanArrearsAgingReport.as_view()),
+    path('api/loan_product_report/',LoanProductReport.as_view()),
+    path('api/collection_report/',CollectionReport.as_view()), 
+    path('api/collection_report_staff/',CollectorReportStaff.as_view()),
+    path('api/disbursement_report/',DisbursementReport.as_view()),  
+    path('api/fees_report/',FeesReport.as_view()),    
+    path('api/outstanding_report/',OutstandingReport.as_view()),                   
     #path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 

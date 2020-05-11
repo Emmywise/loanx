@@ -14,22 +14,27 @@ urlpatterns = [
         name='get_post_borrower'
     ),
     url(
-        r'^api/(?P<pk>[0-9]+)$',
+        r'^api/group/(?P<pk>[0-9]+)$',
         views.get_delete_update_borrower_group,
         name='get_delete_update_borrower_group'
     ),
     url(
-        r'^api/$',
+        r'^api/group/$',
         views.get_post_borrower_group,
         name='get_post_borrower_group'
     ),
     url(
-        r'^api/(?P<pk>[0-9]+)$',
+        r'^api/add-to-group/$',
+        views.add_to_group,
+        name='add_to_group'
+    ),
+    url(
+        r'^api/invite/(?P<pk>[0-9]+)$',
         views.get_delete_update_invite_borrower,
         name='get_delete_update_invite_borrower'
     ),
     url(
-        r'^api/$',
+        r'^api/invite/$',
         views.get_post_invite_borrower,
         name='get_post_invite_borrower'
     )
