@@ -322,3 +322,21 @@ class SavingsFee(models.Model):
     fee_posting_frequency = models.CharField(max_length=200, choices=fee_posting_frequency_choices)
     first_fee = models.CharField(max_length=200, choices=first_fee_choices)
     savings_product = models.ForeignKey(SavingsProduct, on_delete=models.CASCADE)
+
+
+class SavingsCommission(models.Model):
+    type_choices = (
+        ('Deposit', 'Deposit'),
+        ('Interest', 'Interest'),
+        ('Dividend', 'Dividend'),
+        ('Transfer In', 'Transfer In'),
+        ('Withdrawal', 'Withdrawal'),
+        ('Bank Fees', 'Bank Fees'),
+        ('Transfer Out', 'Transfer Out'),
+        ('Commission', 'Commission'),
+    )
+    date = models.DateField()
+    time = models.TimeField()
+    commission_type = models.CharField(max_length=100, choices=type_choices, unique=True)
+    amount = models.DecimalField(decimal_places=2, max_digits=100)
+    description = models.TextField(blank=True, null=True)
