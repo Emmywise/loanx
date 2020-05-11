@@ -358,6 +358,12 @@ class LoanRepaymentViewSet(ModelViewSet):
 
         return queryset
 
+class LoanTypeViewSet(ModelViewSet):
+    serializer_class = LoanTypeSerializer
+
+    def get_queryset(self):
+        queryset = LoanType.objects.all()
+        return queryset
 
 class LoanCollateralViewSet(ModelViewSet):
     serializer_class = LoanCollateralSerializer
@@ -1159,5 +1165,3 @@ class OverrideLoanMaturity(APIView):
         filtered_loan.save()
         loan_schedule.save()
         return Response({"Payment date overriden to "+str(new_date)}, status=status.HTTP_200_OK) 
-    # return Response({'message': 'Bad request'},
-    #                     status=status.HTTP_400_BAD_REQUEST)

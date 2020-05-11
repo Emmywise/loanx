@@ -44,7 +44,7 @@ class LoanType(models.Model):
     penalty_rate = models.DecimalField(max_digits=10, decimal_places=2)
     name = models.CharField(choices=loan_type_options, max_length=100)
     interest_rate = models.DecimalField(max_digits=10, decimal_places=2)
-    apply_penaly_to = models.CharField(choices=penalty_choices, max_length=100)
+    # apply_penalty_to = models.CharField(choices=penalty_choices, max_length=100)
 
     def __str__(self):
         return self.name
@@ -283,6 +283,10 @@ def update_loan_repayment_branch(sender, instance, **kwargs):
     instance.branch = instance.loan.branch   
 
 class LoanDisbursement(models.Model):
+    status_types = (
+        ("Current", "Current"),
+        ("Arrears", "Arrears"),       
+    )
     disbursement_mode_types = (
         ("Cash", "Cash"),
         ("Cheque", "Cheque"),
@@ -304,7 +308,10 @@ class LoanDisbursement(models.Model):
     loan = models.OneToOneField(Loan, on_delete=models.DO_NOTHING)
     disbursement_mode = models.CharField(
         choices=disbursement_mode_types, max_length=100)
-    amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    status = models.CharField(
+        choices=status_types, max_length=100)
+    disbursed_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    outstanding = models.CharField(max_length=400, blank=True, null=True)
     duration = models.PositiveIntegerField(blank=True, null=True)
     loan_interest_percentage = models.CharField(
         max_length=400, blank=True, null=True)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Loan, LoanComment, LoanOfficer, LoanFee, LoanCollateral, LoanAttachment
+from .models import Loan, LoanComment, LoanOfficer, LoanFee, LoanCollateral, LoanAttachment, LoanType
 from .models import (
     Loan, LoanComment, LoanRepayment,
     LoanCollateral, LoanGuarantor,
@@ -16,6 +16,11 @@ class LoanSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Loan
+
+class LoanTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = LoanType
 
 
 class LoanCommentSerializer(serializers.ModelSerializer):

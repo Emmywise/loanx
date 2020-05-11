@@ -29,16 +29,16 @@ from accounts.views import (
 from staffs.views import PayrollViewSet
 from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
-    CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,
-    OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween,
-    BorrowersReport
+    CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,CollectionReport,
+    OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween, LoanProductReport, DisbursementReport, OutstandingReport,
+    BorrowersReport, LoanReport, LoanOfficerReport, LoanArrearsAgingReport, CollectorReportStaff, FeesReport
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
     PrincipalOutstandingLoan, TotalOpenLoans, 
     InterestOutstandingLoan, FullyPaidLoans,
     LoanRepaymentViewSet, LoanCollateralViewSet,
-    LoanGuarantorViewSet, GuarantorFileViewSet,
+    LoanGuarantorViewSet, GuarantorFileViewSet, LoanTypeViewSet,
     RunBvnCheck, GetLoanScore,LoanDisbursementViewSet,
     LoanOfficerList, LoanOfficerDetail,FeesOutstandingLoan,
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
@@ -75,6 +75,7 @@ router.register('payroll', PayrollViewSet, 'payroll')
 
 router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
 router.register('loan-disbursement', LoanDisbursementViewSet, 'loan-disbursement')
+router.register('loan-type', LoanTypeViewSet, 'loan-type')
 router.register('loan-collateral', LoanCollateralViewSet, 'loan-collateral')
 router.register('loan-guarantor', LoanGuarantorViewSet, 'loan-guarantor')
 router.register('loan-guarantor-file', GuarantorFileViewSet, 'loan-guarantor-file')
@@ -153,7 +154,16 @@ urlpatterns = [
     path('api/cash_flow_accumulated/', CashFlowAccumlated.as_view()),
     path('api/cash_flow_monthly/', CashFlowMonthly.as_view()),
     path('api/borrowers_report/', BorrowersReport.as_view()),
-    path('api/filter_borrowers_report/',ReportsBetween.as_view())
+    path('api/filter_borrowers_report/',ReportsBetween.as_view()),
+    path('api/loans_report/',LoanReport.as_view()),
+    path('api/loan_officer_report/',LoanOfficerReport.as_view()),
+    path('api/loan_officer_arrears_report/',LoanArrearsAgingReport.as_view()),
+    path('api/loan_product_report/',LoanProductReport.as_view()),
+    path('api/collection_report/',CollectionReport.as_view()), 
+    path('api/collection_report_staff/',CollectorReportStaff.as_view()),
+    path('api/disbursement_report/',DisbursementReport.as_view()),  
+    path('api/fees_report/',FeesReport.as_view()),    
+    path('api/outstanding_report/',OutstandingReport.as_view()),                   
     #path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 
