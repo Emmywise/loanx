@@ -20,6 +20,7 @@ from .serializers import (
     OtherIncomeSerializer, OtherIncomeDocumentsSerializer,
     LoanBorrowerReportSerializer
 )
+from staffs.models import Payroll
 from loans.models import Loan, LoanScheduler, LoanOfficer, LoanDisbursement, LoanFee, LoanRepayment
 from borrowers.models import Borrower
 from accounts.models import Branch
@@ -1220,3 +1221,35 @@ class MonthlyReport(APIView):
             "number of fully paid": len(number_of_fully_paid)
         }        
         return Response(data, status=status.HTTP_200_OK) 
+
+
+
+class AllEnteries(APIView):
+    def get(self, request, pk=None):
+        all = []
+        branch = request.GET.get("branch")
+        disbursements = LoanDisbursement.objects.all()
+        globe = []
+        for d in disbursements:
+            data = {
+            "d_type" : "Loan Released",
+            "category" : d.loan.loan_type.name,
+            "transaction_details" : d.loan.borrower.first_name + " " + d.loan.borrower.last_name + " " + str(d.loan.pk),
+            "d_in" : " ",
+            "d_out" : d.disbursed_amount
+            }
+            globe.append(data)
+
+
+        payroll = Payroll.objects.all()
+        for p in payroll:
+            data2 = {
+            "d_type" : "Pay roll",
+            "category" : p.staff.user.username,
+            "transaction_details" : "",
+            "d_in" : "",
+            "d_out" : p.net_pay
+            }
+            globe.append(data2)
+    
+        return Response(globe, status=status.HTTP_200_OK) 
