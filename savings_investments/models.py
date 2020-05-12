@@ -301,3 +301,42 @@ def update_transaction_table(sender, instance, created, **kwargs):
         approved=True,
         account_to_account_transfer=True
     )
+
+
+class SavingsFee(models.Model):
+    fee_posting_frequency_choices = (
+        ('Every 1 month', 'Every 1 month'),
+        ('Every 2 month', 'Every 2 month'),
+        ('Every 3 month', 'Every 3 month'),
+        ('Every 4 month', 'Every 4 month'),
+        ('Every 6 month', 'Every 6 month'),
+        ('Every 12 month', 'Every 12 month'),
+        ('One-time', 'One-time')
+    )
+    first_fee_choices = (
+        ('Full Fee Amount', 'Full Fee Amount'),
+        ('Pro-Rata Basis', 'Pro-Rata Basis')
+    )
+    name = models.CharField(max_length=400)
+    amount = models.DecimalField(max_digits=100, decimal_places=2)
+    fee_posting_frequency = models.CharField(max_length=200, choices=fee_posting_frequency_choices)
+    first_fee = models.CharField(max_length=200, choices=first_fee_choices)
+    savings_product = models.ForeignKey(SavingsProduct, on_delete=models.CASCADE)
+
+
+class SavingsCommission(models.Model):
+    type_choices = (
+        ('Deposit', 'Deposit'),
+        ('Interest', 'Interest'),
+        ('Dividend', 'Dividend'),
+        ('Transfer In', 'Transfer In'),
+        ('Withdrawal', 'Withdrawal'),
+        ('Bank Fees', 'Bank Fees'),
+        ('Transfer Out', 'Transfer Out'),
+        ('Commission', 'Commission'),
+    )
+    date = models.DateField()
+    time = models.TimeField()
+    commission_type = models.CharField(max_length=100, choices=type_choices, unique=True)
+    amount = models.DecimalField(decimal_places=2, max_digits=100)
+    description = models.TextField(blank=True, null=True)

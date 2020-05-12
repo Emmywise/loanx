@@ -108,3 +108,10 @@ class TransferFundSerializer(serializers.ModelSerializer):
         if attrs['from_account'] == attrs['to_account']:
             raise serializers.ValidationError("cannot transfer fund from/to same account")
         return attrs
+
+
+class SavingsFeeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = SavingsFee

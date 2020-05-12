@@ -10,13 +10,13 @@ from .serializers import (
     SavingsAccountSerializer, TellerSerializer,
     CashSourceSerializer, TransferCashSerializer,
     SavingsProductReportSerializer, TellerReportSerializer,
-    TransferFundSerializer
+    TransferFundSerializer, SavingsFeeSerializer
 )
 from .models import (
     SavingsTransaction, SavingsProduct,
     SavingsAccount, Teller,
     CashSource, TransferCash,
-    FundTransferLog
+    FundTransferLog, SavingsFee
 )
 # Create your views here.
 
@@ -150,4 +150,8 @@ class FundTransferLogViewSet(ModelViewSet):
             queryset = queryset.filter(date_time__lte=date_to)
 
         return queryset
-        
+
+
+class SavingsFeeViewSet(ModelViewSet):
+    serializer_class = SavingsFeeSerializer
+    queryset = SavingsFee.objects.all()       

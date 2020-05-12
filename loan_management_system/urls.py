@@ -53,13 +53,19 @@ from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
     TellerViewSet, SavingsTransactionViewSet,
     CashSourceViewSet, TransferCashViewSet,
-    FundTransferLogViewSet
+    FundTransferLogViewSet, SavingsFeeViewSet
 )
 #, InitiateCreditSavings
 from commons.views import (
     AssetTypeViewSet, AssetViewSet, AssetDocumentViewSet,
     AssetValuationViewSet, ExpenseTypeViewSet, ExpenseViewSet,
     ExpenseDocumentViewSet
+)
+from investors.views import (
+    InvestorViewSet, InvestorDocumentsViewSet, InvestorInvitationViewSet,
+    LoanInvestmentProductViewSet, LoanInvestmentViewSet,
+    InvestorProductViewSet, InvestorAccountViewSet,
+    InvestorTransactionViewSet
 )
 
 router = DefaultRouter()
@@ -90,6 +96,7 @@ router.register('savings-transaction', SavingsTransactionViewSet, 'savings-trans
 router.register('cash-source', CashSourceViewSet, 'cash-source')
 router.register('transfer-cash', TransferCashViewSet, 'transfer-cash')
 router.register('transfer-funds', FundTransferLogViewSet, 'transfer-funds')
+router.register('savings-fee', SavingsFeeViewSet, 'savings-fee')
 
 router.register('asset-type', AssetTypeViewSet, 'asset-type')
 router.register('asset', AssetViewSet, 'asset')
@@ -102,6 +109,15 @@ router.register('expense-document', ExpenseDocumentViewSet, 'expense-document')
 router.register('other-income-type', OtherIncomeTypeViewSet, 'other-income-type')
 router.register('other-income', OtherIncomeViewSet, 'other-income')
 router.register('other-income-document', OtherIncomeDocumentsViewSet, 'other-income-document')
+
+router.register('investor', InvestorViewSet, 'investor')
+router.register('investor-document', InvestorDocumentsViewSet, 'investor-document')
+router.register('investor-invitation', InvestorInvitationViewSet, 'investor-invitation')
+router.register('loan-investment-product', LoanInvestmentProductViewSet, 'loan-investment-product')
+router.register('loan-investment', LoanInvestmentViewSet, 'loan-investment')
+router.register('investor-product', InvestorProductViewSet, 'investor-product')
+router.register('investor-account', InvestorAccountViewSet, 'investor-account')
+router.register('investor-transaction', InvestorTransactionViewSet, 'investor-transaction')
 
 
 urlpatterns = [

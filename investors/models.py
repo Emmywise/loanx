@@ -8,9 +8,40 @@ from django.dispatch import receiver
 
 
 class Investor(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    title_choices = (
+        ('Mr.', 'Mr.'),
+        ('Mrs.', 'Mrs.'),
+        ('Miss.', 'Miss.'),
+        ('Ms.', 'Ms.'),
+        ('Dr.', 'Dr.'),
+        ('Prof.', 'Prof.'),
+        ('Rev.', 'Rev.'),
+    )
+    working_status_choices = (
+        ('Employee', 'Employee'),
+        ('Government Employee', 'Government Employee'),
+        ('Private Sector Employee', 'Private Sector Employee'),
+        ('Owner', 'Owner'),
+        ('Student', 'Student'),
+        ('Overseas Worker', 'Overseas Worker'),
+        ('Pensioner', 'Pensioner'),
+        ('Unemployed', 'Unemployed'),
+    )
+    first_name = models.CharField(max_length=100)
+    middle_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     business_name = models.CharField(max_length=400, blank=True, null=True)
     investor_id = models.CharField(max_length=125, default='')
+    gender = models.CharField(max_length=20, choices=(('Male', 'Male'), ('Female', 'Female')))
+    title = models.CharField(max_length=20, choices=title_choices)
+    mobile = models.CharField(max_length=20, unique=True)
+    email = models.EmailField(max_length=200, unique=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    address = models.CharField(max_length=400)
+    city = models.CharField(max_length=400)
+    state = models.CharField(max_length=400)
+    working_status = models.CharField(max_length=100, choices=working_status_choices)
+    photo = models.ImageField(upload_to='investor', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -19,14 +50,14 @@ class Investor(models.Model):
 
 @receiver(pre_save, sender=Investor)
 def update_investor_id(sender, instance, **kwargs):
-    if not instance.savings_id:
+    if not instance.investor_id:
         last_obj = Investor.objects.last()
-        # print(last_obj.savings_id)
+        # print(last_obj.investor_id)
         if last_obj:
-            if last_obj.savings_id:
-                instance.savings_id = str(int(last_obj.savings_id) + 1)
+            if last_obj.investor_id:
+                instance.investor_id = str(int(last_obj.investor_id) + 1)
         else:
-            instance.savings_id = str(10000001)
+            instance.investor_id = str(10000001)
 
 
 class InvestorDocuments(models.Model):
@@ -55,7 +86,8 @@ class LoanInvestmentProduct(models.Model):
         ('Per Month', 'Per Month'),
         ('Per Year', 'Per Year'),
     )
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE,
+                    blank=True, null=True)
     name = models.CharField(max_length=200)
     date = models.DateTimeField()
     interest_rate_per_annum = models.DecimalField(max_digits=6, decimal_places=2)
@@ -74,12 +106,12 @@ class InvestorProduct(models.Model):
     )
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
-    date = models.DateTimeField()
+    date = models.DateField()
     interest_rate_per_annum = models.DecimalField(max_digits=6, decimal_places=2)
     interest_posting_frequency = models.CharField(max_length=200, choices=interest_posting_frequency_choices)
-    min_balance_for_interest_rate = models.DecimalField(max_digits=6, decimal_places=2)
+    min_balance_for_interest_rate = models.DecimalField(max_digits=100, decimal_places=2)
     allow_overdraw = models.BooleanField(default=False)
-    min_balance_for_withdrawal = models.DecimalField(max_digits=6, decimal_places=2)
+    min_balance_for_withdrawal = models.DecimalField(max_digits=100, decimal_places=2)
 
 
 class InvestorAccount(models.Model):
@@ -92,14 +124,14 @@ class InvestorAccount(models.Model):
 
 @receiver(pre_save, sender=InvestorAccount)
 def update_investor_account_id(sender, instance, **kwargs):
-    if not instance.savings_id:
+    if not instance.investor_account_id:
         last_obj = InvestorAccount.objects.last()
-        # print(last_obj.savings_id)
+        # print(last_obj.investor_account_id)
         if last_obj:
             if last_obj.investor_account_id:
                 instance.investor_account_id = str(int(last_obj.investor_account_id) + 1)
         else:
-            instance.savings_id = str(10000001)
+            instance.investor_account_id = str(10000001)
 
 
 class LoanInvestment(models.Model):
@@ -122,6 +154,7 @@ class InvestorTransaction(models.Model):
         ('Transfer Out', 'Transfer Out'),
         ('Commission', 'Commission'),
     )
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     investor_account = models.ForeignKey(InvestorAccount, on_delete=models.CASCADE)
     date_time = models.DateTimeField()
     transaction_type = models.CharField(max_length=30, choices=transaction_type_choices)
