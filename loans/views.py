@@ -5,7 +5,7 @@ import hashlib
 import datetime
 import random
 import decimal
-
+from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.utils import timezone
@@ -637,9 +637,7 @@ class ApproveOrDeclineLoan(APIView):
                 #     total_repayment_amount += float(loan_fee.amount)
                 current_time = timezone.now()
                 if loan_obj.interest_method == "Flat Rate":
-                    print("herrrrrr")
                     total_repayment_amount = total_repayment_amount / duration
-                    print(total_repayment_amount)
                     if (not default_fixed_amount) and (not interest_rate):
                         total_repayment_amount = total_repayment_amount + ((interest_rate/100)*float(loan_obj.principal_amount))
                     loan_obj.interest = (interest_rate/100)*float(loan_obj.principal_amount)
@@ -705,6 +703,11 @@ class ApproveOrDeclineLoan(APIView):
                         )
                         loan_interest += loan_obj.principal_amount * (loan_obj.interest_rate/100)
                     loan_obj.interest = loan_interest
+                    loan_obj.total_due_principal = loan_obj.principal_amount
+                    loan_obj.total_due_interest = loan_obj.principal_amount * (loan_obj.interest_rate/100) * duration
+                    loan_obj.total_due_fees = loan_obj.loan_fees
+                    loan_obj.total_due_penalty = loan_obj.penalty_amount
+
                     loan_obj.save()
                     loan_schedules = LoanScheduler.objects.filter(loan = loan_obj)
                     serializer = LoanSchedulerSerializer(loan_schedules, many=True)
@@ -781,7 +784,11 @@ class ApproveOrDeclineLoan(APIView):
                             total_loan_fee += loan_fee
                         loan_obj.loan_fees = total_loan_fee 
                         loan_obj.interest = total_interest
-                        loan_obj.save()               
+                    loan_obj.total_due_principal = loan_obj.principal_amount/loan_obj.duration * duration
+                    loan_obj.total_due_interest = (repayment_schedule - loan_obj.principal_amount/loan_obj.duration) * duration
+                    loan_obj.total_due_fees = total_loan_fees
+                    loan_obj.total_due_penalty = 0.00
+                    loan_obj.save()               
                     loan_schedules = LoanScheduler.objects.filter(loan = loan_obj)
                     serializer = LoanSchedulerSerializer(loan_schedules, many=True)
                     return Response({"message": "loan has been approved", "schedules":serializer.data})
@@ -865,7 +872,11 @@ class ApproveOrDeclineLoan(APIView):
                             status='pending'
                         )
 
-                    loan_obj.interest = decimal.Decimal(principal_plus_interest) - decimal.Decimal(loan_obj.principal_amount)                         
+                    loan_obj.interest = decimal.Decimal(principal_plus_interest) - decimal.Decimal(loan_obj.principal_amount)  
+                    loan_obj.total_due_principal = (total_repayment_amount - other_principal) * duration
+                    loan_obj.total_due_interest = (other_principal) * duration
+                    loan_obj.total_due_fees = total_loan_fees
+                    loan_obj.total_due_penalty = 0.00                       
                     loan_obj.save()
                     loan_schedules = LoanScheduler.objects.filter(loan = loan_obj)
                     serializer = LoanSchedulerSerializer(loan_schedules, many=True)

@@ -30,8 +30,10 @@ from staffs.views import PayrollViewSet
 from reports.views import (
     CalendarEventViewSet, CalendarLogViewSet,
     CalenderEventEmailViewSet, OtherIncomeDocumentsViewSet,CollectionReport,
-    OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween, LoanProductReport, DisbursementReport, OutstandingReport,
-    BorrowersReport, LoanReport, LoanOfficerReport, LoanArrearsAgingReport, CollectorReportStaff, FeesReport
+    OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween, LoanProductReport, DisbursementReport,\
+    OutstandingReport, BorrowersReport, LoanReport, LoanOfficerReport, LoanArrearsAgingReport, \
+        CollectorReportStaff, FeesReport, AtAGlanceReport,
+    MonthlyReport
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
@@ -45,7 +47,8 @@ from loans.views import (
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
     DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays, OverrideLoanMaturity,
     ApproveOrDeclineLoan, ManualRepayment, SaveAuthCode, AutomaticRepayment, LoanToOfficer)
-from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus, IndividualRepayments
+from borrowers.views import SearchBorrowerGroup, IndividualOpenLoans, BorrowersSavings, SearchByWorkingStatus,\
+     IndividualRepayments
 from savings_investments.views import (
     SavingsProductViewSet, SavingsAccountViewSet,
     TellerViewSet, SavingsTransactionViewSet,
@@ -163,7 +166,9 @@ urlpatterns = [
     path('api/collection_report_staff/',CollectorReportStaff.as_view()),
     path('api/disbursement_report/',DisbursementReport.as_view()),  
     path('api/fees_report/',FeesReport.as_view()),    
-    path('api/outstanding_report/',OutstandingReport.as_view()),                   
+    path('api/outstanding_report/',OutstandingReport.as_view()),     
+    path('api/at_a_glance_report/',AtAGlanceReport.as_view()), 
+    path('api/monthly_report/', MonthlyReport.as_view()),                      
     #path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 

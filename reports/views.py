@@ -1,6 +1,7 @@
 from django.shortcuts import render
 import datetime
 import calendar
+from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q
 from fine_search.fine_search import perform_search_queryset
@@ -19,8 +20,9 @@ from .serializers import (
     OtherIncomeSerializer, OtherIncomeDocumentsSerializer,
     LoanBorrowerReportSerializer
 )
-from loans.models import Loan, LoanScheduler, LoanOfficer, LoanDisbursement, LoanFee
+from loans.models import Loan, LoanScheduler, LoanOfficer, LoanDisbursement, LoanFee, LoanRepayment
 from borrowers.models import Borrower
+from accounts.models import Branch
 
 # Create your views here.
 
@@ -1113,3 +1115,108 @@ class OutstandingReport(APIView):
                         each_new_rez["payments_penalty"] = str(float(each_rez["payments_penalty"]) + float(each_new_rez["payments_penalty"]))
                         each_new_rez["payments_total"] = str(float(each_rez["payments_total"]) + float(each_new_rez["payments_total"]))
         return Response(new_rez, status=status.HTTP_200_OK) 
+
+
+
+class AtAGlanceReport(APIView):
+    def get(self, request, pk=None):
+        loans_released = Loan.objects.exclude(status = "processing").exclude(status = "denied")
+        fully_paid_loans = Loan.objects.filter(status="fully paid")
+        default_loans = Loan.objects.filter(status="past maturity")
+        de_amount = 0
+        for r in default_loans:
+            de_amount += r.remaining_balance
+        percentage_default_loans = (len(default_loans)/len(loans_released)) * 100
+        all_borrowers = len(Borrower.objects.all())
+        rez = []
+        borrowers = []
+        new_rez = []
+        balance = 0
+        total_payments_principal = 0
+        total_payments_interest = 0
+        total_payments_fees = 0
+        total_payments_penalty = 0
+        for each_loan_released in loans_released:
+            borrower = each_loan_released.borrower
+            principal_released = float(each_loan_released.principal_amount)
+            balance += each_loan_released.remaining_balance
+            #maturity_date__lte = datetime.date.today()
+            loan_schedule = LoanScheduler.objects.filter(loan = each_loan_released).filter(paid__gt = 0)
+            amount_paid = float(each_loan_released.amount_paid)
+            payments_interest = 0
+            payments_fees = 0
+            payments_penalty = 0
+            for each_loan_schedule in loan_schedule:
+                payments_interest += each_loan_schedule.interest
+                payments_fees += each_loan_schedule.fees
+                payments_penalty += each_loan_schedule.penalty
+            payments_principal = amount_paid - payments_interest - payments_fees - payments_penalty
+            #rez.append(serializer.data)
+            borrowers.append(borrower.pk)
+            total_payments_principal += payments_principal
+            total_payments_interest += payments_interest
+            total_payments_fees += payments_fees
+            total_payments_penalty += payments_penalty
+        borrowers = (list(set(borrowers)))
+        data = {
+            "no_of_registered_borrowers": all_borrowers,
+            "no_of_active_borrowers": len(borrowers),
+            "fully paid loans": len(fully_paid_loans),
+            "open loans": len(loans_released),
+            "balance": balance,
+            "default loans":len(default_loans),
+            "amount_of_past_due": de_amount,
+            "percentage_default_loans":percentage_default_loans,
+            "payments_principal":total_payments_principal,
+            "payments_interest":total_payments_interest,
+            "payments_fees":total_payments_fees,
+            "payments_penalty":total_payments_penalty,
+        }
+
+        return Response(data, status=status.HTTP_200_OK) 
+
+
+class MonthlyReport(APIView):
+    def get(self, request, pk=None):
+        branch = request.GET.get("branch")
+        all_loan = Loan.objects.all()
+        number_of_repayments = LoanRepayment.objects.all()
+        number_of_fully_paid = Loan.objects.filter(status="fully paid")
+        new_loans = Loan.objects.filter(request_date__lte=datetime.datetime.now() - timedelta(days=30))
+        pending_due = 0
+        total_principal_received = 0
+        total_interest_received = 0
+        total_fees_received = 0
+        total_penalty_received = 0
+        total_amount_received = 0
+        for each_loan in all_loan:
+            total_received = each_loan.amount_paid
+            principal_received = each_loan.total_due_principal - each_loan.interest\
+                 - each_loan.loan_fees - each_loan.penalty_amount
+            interest_received = each_loan.total_due_interest - each_loan.interest
+            fees_received = each_loan.total_due_loan_fee - each_loan.loan_fees
+            penalty_received = each_loan.total_due_penalty - each_loan.penalty_amount
+            pending_due += each_loan.remaining_balance
+        total_amount_received += total_received
+        total_principal_received += principal_received
+        total_interest_received += interest_received
+        total_fees_received += fees_received
+        total_penalty_received += penalty_received
+        queried_branch = Branch.objects.get(pk=branch)
+        if total_interest_received < 0:
+            total_interest_received = 0
+        if total_principal_received < 0:
+            total_principal_received = 0
+        data = {
+            "principal_balance": queried_branch.capital,
+            "principal_received": total_principal_received,
+            "interest received": total_interest_received,
+            "fees received": total_fees_received,
+            "penalty received": total_penalty_received,
+            "total_received": total_amount_received,
+            "new loans": len(new_loans),
+            "number of repayments": len(number_of_repayments),
+            "pending due": pending_due,
+            "number of fully paid": len(number_of_fully_paid)
+        }        
+        return Response(data, status=status.HTTP_200_OK) 
