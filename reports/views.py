@@ -4,7 +4,7 @@ import calendar
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q
-from fine_search.fine_search import perform_search_queryset
+#from fine_search.fine_search import perform_search_queryset
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response

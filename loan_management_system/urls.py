@@ -152,7 +152,7 @@ urlpatterns = [
     path('search_borrower_group', SearchBorrowerGroup),
     path('individual_open_loans', IndividualOpenLoans),
     path('individual_repayments', IndividualRepayments),
-    path('fees_outstanding', FeesOutstandingLoan.as_view()),    
+    path('fees_outstanding', FeesOutstandingLoan.as_view()),   
     path('borrowers_savings/', BorrowersSavings),
     path('search_by_working_status/<str:status>',SearchByWorkingStatus),
     path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),

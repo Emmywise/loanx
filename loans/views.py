@@ -50,7 +50,7 @@ class LoanView(APIView):
         ref = request.GET.get("ref")
         loan_status = request.GET.get("status")
         borrower = request.GET.get("borrower")
-        if ref:
+        if ref: 
             try:
                 loan = Loan.objects.get(pk=ref)
                 serializer = LoanSerializer(loan)

@@ -119,7 +119,7 @@ class Loan(models.Model):
     status = models.CharField(
         max_length=30, choices=status_choices, default='processing')
     request_date = models.DateField(auto_now=True)
-    loan_release_date = models.DateField(blank=True, null=True)
+    loan_release_date = models.DateField(blank=True, null=True) 
     direct_debit = models.BooleanField(default=False)
     interest_method = models.CharField(
         choices=interest_method_types, max_length=100)
