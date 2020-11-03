@@ -3,6 +3,54 @@ import hashlib
 import json
 
 
+def get_account_name(account_number, bank_code, ref):
+    url = 'https://api.onepipe.io/v1/generic/transact'
+    myobj = {
+        "request_ref": ref,
+        "request_type": "account_number_lookup",
+        "auth": {
+            "type": "",
+            "secure": "",
+            "auth_provider": "SunTrust"
+        },
+        "transaction": {
+            "amount": "",
+            "transaction_ref": ref,
+            "transaction_desc": "Look Up",
+            "transaction_ref_parent": "",
+            "customer": {
+                "customer_ref": "2348022221412",
+                "firstname": "{{customer.firstname}}",
+                "surname": "{{customer.surname}}",
+                "email": "opeadeoye@gmail.com",
+                "mobile_no": "2348022221412"
+            },
+            "details": {
+                "account_number": account_number,
+                "bank_code": bank_code
+            }
+        }
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko)'
+                      ' Chrome/50.0.2661.102 Safari/537.36',
+        'Authorization': 'Bearer 9aLI01bWCu8dOC5PlNIs_67782cc9350b4be58a41ae74ceec3303',
+        'Signature': hashlib.md5(str.encode(ref + ';' + 'lLWD9NGlgYjYuySb')).hexdigest()
+    }
+
+    acc = requests.post(url, data=json.dumps(myobj), headers=headers)
+    results = {}
+    
+    if acc.json()['status'] == 'Failed':
+        return False
+    else:
+        results['account_number'] = acc.json()['data']['provider_response']['account_number']
+        results['account_name'] = acc.json()['data']['provider_response']['account_name']
+    return results
+
+
 def details_from_bvn(bvn, ref):
     url = 'https://api.onepipe.io/v1/generic/transact'
     myobj = {

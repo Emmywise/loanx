@@ -25,7 +25,7 @@ from accounts.models import (
     Profile
 )
 from borrowers.serializers import BorrowerSerializer
-from .utils import details_from_bvn, compare_dates, get_loan_score
+from .utils import details_from_bvn, compare_dates, get_loan_score, get_account_name
 from .save_auth_code import ddebitCode
 from .direct_debit import directDebit
 
@@ -483,6 +483,19 @@ class RunBvnCheck(APIView):
         except Borrower.DoesNotExist as err:
             return Response({"message": "borrower with the id does not exist"},
                             status=status.HTTP_404_NOT_FOUND)
+
+
+class GetAccountName(APIView):
+
+    def post(self, request):
+        account_number = request.data.get("account_number")
+        bank_code = request.data.get("bank_code")
+        ref = 'loanx' + str(random.randint(100000000, 999999999))
+        rez = get_account_name(account_number, bank_code, ref)
+        if rez == False:
+            return Response({"message": "Either Account Number/Selected Bank does not match."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"message": rez},status=status.HTTP_200_OK)
 
 
 class GetLoanScore(APIView):

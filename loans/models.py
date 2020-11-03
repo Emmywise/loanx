@@ -51,6 +51,20 @@ class LoanType(models.Model):
 
 
 class Loan(models.Model):
+    repayment_cycle_choices = (
+        ("daily", "daily"),
+        ("weekly", "weekly"),
+        ("biweekly", "biweekly"),
+        ("monthly", "monthly"),
+        ("bi-monthly", "bi-monthly"),
+        ("quarterly", "quarterly"),
+        ("every 4 months", "every 4 months"),
+        ("semi-annually", "semi-annually"),
+        ("annually", "annually"),
+        ("lump sum", "lump sum"),
+    )
+
+
     status_choices = (
         ("processing", "processing"),
         ("open", (
@@ -109,30 +123,29 @@ class Loan(models.Model):
         ('Interest-Only', ' Interest-Only'),
         ('Compound-Interest', 'Compound Interest'),
     )
+    disbursed_choices = (
+        ('Online Transfer', 'Online Transfer'),
+        ('Cash', 'Cash'),
+        ('Cheque', 'Cheque'),
+        ('Wire Transfer', 'Wire Transfer'),
+    )   
     branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
-    principal_amount = models.DecimalField(max_digits=20, decimal_places=2)
-    interest_mode = models.CharField(
-        choices=interest_type_types, max_length=400, blank=True, null=True, default='Percentage Based')
+    principal_amount = models.FloatField(max_length=400, blank=False, default="")
+    interest_mode = models.CharField(choices=interest_type_types, max_length=400, blank=True, null=True, default='Percentage Based')
     duration = models.PositiveIntegerField(default=0)
-    status = models.CharField(
-        max_length=30, choices=status_choices, default='processing')
+    status = models.CharField(max_length=30, choices=status_choices, default='processing')
     request_date = models.DateField(auto_now=True)
     loan_release_date = models.DateField(blank=True, null=True) 
     direct_debit = models.BooleanField(default=False)
-    interest_method = models.CharField(
-        choices=interest_method_types, max_length=100)
-    loan_interest_percentage = models.CharField(
-        max_length=400, blank=True, null=True)
-    loan_interest_fixed_amount = models.CharField(
-        max_length=400, blank=True, null=True)
-    loan_interest_percentage_period = models.CharField(
-        choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
+    interest_method = models.CharField(choices=interest_method_types, max_length=100)
+    loan_interest_percentage = models.CharField(max_length=400, blank=True, null=True)
+    loan_interest_fixed_amount = models.CharField(max_length=400, blank=True, null=True)
+    loan_interest_percentage_period = models.CharField(choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
     loan_duration = models.IntegerField(default=0)
-    loan_duration_period = models.CharField(choices=loan_duration_period_types,
-                                            max_length=400, blank=True, null=True)
-
+    loan_duration_period = models.CharField(choices=loan_duration_period_types,max_length=400, blank=True, null=True)
+    repayment_cycles = models.CharField(verbose_name='repayment Cycle', max_length=100, choices=repayment_cycle_choices, default='')
     decimal_places = models.CharField(
         choices=decimal_places_types, max_length=400, blank=True, null=True)
     interest_start_date = models.DateField(blank=True, null=True)
@@ -160,6 +173,7 @@ class Loan(models.Model):
     total_due_penalty = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     interest = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     loan_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    #loan_fees = models.ManyToManyField('LoanFee', default=None)
     penalty_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0.0)
     loan_score = models.IntegerField(default=0, blank=True, null=True)
 
@@ -187,6 +201,27 @@ def update_balance(sender, instance, **kwargs):
     instance.loan_score = instance.borrower.loan_score
 
  
+class LoanFee(models.Model):
+    interest_type_types = (
+        ("Percentage Based", "Percentage Based"),
+        ("Fixed Amount Per Cycle", "Fixed Amount Per Cycle"),
+    )
+    # apply_loan_fee_choices = (
+    #     ("Principal", "Principal"),
+    #     ("Interest", "Interest"),
+    #     ("Principal + Interest", "Principal + Interest"),
+    # )
+    name = models.CharField(max_length=128, blank=True, null=True)
+    amount = models.DecimalField(decimal_places=2, max_digits=20, default=0)
+    interest_type = models.CharField(
+        choices=interest_type_types, max_length=100)
+    # apply_loan_fee = models.CharField(
+    #     choices=apply_loan_fee_choices, max_length=100, default='')
+    percentage = models.DecimalField(decimal_places=2, max_digits=20, default=0)
+
+    def __str__(self):
+        return self.name
+
 
 class LoanOfficer(models.Model):
     #loan = models.ManyToManyField(Loan, blank=True, null=True)

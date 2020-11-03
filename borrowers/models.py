@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 from cloudinary.models import CloudinaryField
-from accounts.models import Profile
+from accounts.models import Profile, Country
 import os
 # Create your models here.
 
@@ -11,7 +11,7 @@ class Borrower(models.Model):
     gender_choices = (
         ('Male', 'Male'),
         ('Female', 'Female'),
-        ('Prefer not to say', 'Prefer not to say'),
+        ('Prefer not to say', 'Prefer not to say'), 
     )
     title_choices = (
         ('Mr', 'Mr'),
@@ -32,6 +32,7 @@ class Borrower(models.Model):
         ('Pensioner', 'Pensioner'),
         ('Unemployed', 'Unemployed'),
     )
+    country = models.ForeignKey(Country, on_delete=models.DO_NOTHING)
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(
         max_length=400)
