@@ -130,7 +130,22 @@ class Loan(models.Model):
         ('Cash', 'Cash'),
         ('Cheque', 'Cheque'),
         ('Wire Transfer', 'Wire Transfer'),
-    )   
+    )  
+    charge_in_loan_schedule_type = (
+        ('dont include in the loan schedule', 'dont include in the loan schedule'),
+        ('distribute fee evenly among all repayments', 'distribute fee evenly among all repayments'),
+        ('charge fee based on the release date', 'charge fee based on the release date'),
+        ('charge fee based on the first repayment', 'charge fee based on the first repayment'),
+        ('charge fee based on the last repayment', 'charge fee based on the last repayment'),
+    )
+    bank = models.CharField(verbose_name='Bank Name', max_length=100, blank=False, default='')
+    amount_to_borrower = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
+    account_name = models.CharField(verbose_name='Account Name', max_length=100, blank=False, default='')
+    charge_in_loan_schedule = models.CharField(verbose_name=('How should this be charged in Loan Schedule?'),
+                            max_length=100, default='', choices=charge_in_loan_schedule_type, blank=True)
+    fixed_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0.0)
+    loan_title = models.CharField(max_length=100, default='', blank=False) 
+    account_no = models.CharField(verbose_name='Account No.', max_length=15, default='', unique=True)
     branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     borrower = models.ForeignKey('borrowers.Borrower', on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
@@ -153,6 +168,9 @@ class Loan(models.Model):
     loan_guarantor = models.ManyToManyField('LoanGuarantor', default='', related_name='loan_guarantor', blank=True)
     loan_collateral = models.ForeignKey('LoanCollateral', on_delete=models.DO_NOTHING, null=True, default='')
 
+
+
+
     maturity_date = models.DateField(blank=True, null=True)
     repayment_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=100, decimal_places=2, default=0)
@@ -169,6 +187,7 @@ class Loan(models.Model):
     staff_permission_disbursed = models.BooleanField(default=True)
     staff_permission_accepted = models.BooleanField(default=False)
     disbursed = models.BooleanField(default=False)
+    approved = models.BooleanField(default=False)
     bvn = models.CharField(max_length=20, blank=True, null=True)
     total_due_principal = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     total_due_interest = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
@@ -176,11 +195,13 @@ class Loan(models.Model):
     total_due_penalty = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     interest = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     #loan_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    current_repayment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, blank=True)
     loan_fees = models.ManyToManyField('LoanFee', default=None)
     penalty_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0.0)
     loan_score = models.IntegerField(default=0, blank=True, null=True)
     disbursed_by = models.CharField(max_length=50, choices=disbursed_choices, blank=False, default='Online Transfer')
-
+    loan_description = models.TextField(default='', blank=True)
+    account_number = models.CharField(verbose_name='Account Number', max_length=20, blank=False, default='')
     def get_balance(self):
         return self.repayment_amount - self.amount_paid
 

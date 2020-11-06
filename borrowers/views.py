@@ -3,9 +3,9 @@ from django.db.models import Q
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, JSONParser
+from rest_framework.parsers import MultiPartParser, JSONParser, FileUploadParser
 from rest_framework import status
-
+from rest_framework.views import APIView
 from .models import *
 from loans.models import Loan, LoanRepayment
 from loans.serializers import LoanSerializer, LoanRepaymentSerializer
@@ -26,7 +26,7 @@ def get_delete_update_borrower(request, pk):
         return Response(serializer.data)
 
     elif request.method == 'PATCH':
-        serializer = BorrowerSerializer(borrower, data=request.data, partial = True)
+        serializer = BorrowerSerializer2(borrower, data=request.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -52,7 +52,7 @@ def get_post_borrower(request):
     # insert a new record for a restaurant
     elif request.method == 'POST':
         data = {
-            'user': request.data.get('user'),
+            'profile': request.data.get('profile'),
             'first_name': request.data.get('first_name'),
             'middle_name': request.data.get('middle_name'),
             'last_name': request.data.get('last_name'),
@@ -71,16 +71,65 @@ def get_post_borrower(request):
             'borrower_photo': request.data.get('borrower_photo'),
             'description': request.data.get('description'),
             'is_activated': request.data.get('is_activated'),
-            'borrower_group': request.data.get('borrower_group')
+            'borrower_group': request.data.get('borrower_group'),
+            'loan_officer': request.data.get('loan_officer')
         }
-        upload_data = cloudinary.uploader.upload(data['borrower_photo'])
-        data['borrower_photo'] = upload_data['url']
-        serializer = BorrowerSerializer(data=data)
+        if data['borrower_photo'] != '':
+            upload_data = cloudinary.uploader.upload(data['borrower_photo'])
+            data['borrower_photo'] = upload_data['url']
+        print(data['loan_officer'])
+        serializer = BorrowerSerializer2(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class BorrowerFileList(APIView):
+    parser_class = (FileUploadParser,)
+    def post(self, request):
+        serializer = BorrowerFileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, pk=None):
+        queryset = Borrower_File.objects.all()
+        borrower = self.request.GET.get('borrower')
+        # if borrower:
+        #     return LoanCollateral.objects.filter(branch=branch)
+        borrower_files = Borrower_File.objects.filter(borrowers_id=borrower)
+        print(borrower_files)
+        serializer = BorrowerFileSerializer(borrower_files, many=True)
+        return Response(serializer.data)
+
+class BorrowerFileDetail(APIView):
+    """
+    Retrieve, update or delete a snippet instance.
+    """
+    def get_object(self, pk):
+        try:
+            return Borrower_File.objects.get(pk=pk)
+        except Borrower_File.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        borrower_files = self.get_object(pk)
+        serializer = BorrowerFileSerializer(borrower_files)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        borrower_files = self.get_object(pk)
+        serializer = BorrowerFileSerializer(borrower_files, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        borrower_files = self.get_object(pk)
+        borrower_files.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET', 'DELETE', 'PATCH'])
 def get_delete_update_borrower_group(request, pk):
