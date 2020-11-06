@@ -43,7 +43,7 @@ from loans.views import (
     LoanGuarantorViewSet, GuarantorFileViewSet, LoanTypeViewSet,
     RunBvnCheck, GetAccountName, GetLoanScore,LoanDisbursementViewSet,
     LoanOfficerList, LoanOfficerDetail,FeesOutstandingLoan,
-    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeList,
+    InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeViewSet,
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
     DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays, OverrideLoanMaturity,
     ApproveOrDeclineLoan, ManualRepayment, SaveAuthCode, AutomaticRepayment, LoanToOfficer)
@@ -79,7 +79,7 @@ router.register('user-profile', UserProfileViewSet, 'user-profile')
 router.register('calendar-events', CalendarEventViewSet, 'calendar-events')
 router.register('calendar-logs', CalendarLogViewSet, 'calendar-logs')
 router.register('calendar-events-email', CalenderEventEmailViewSet, 'calendar-events-email')
-
+router.register('loan-fees', LoanFeeViewSet, 'loan-fees')
 router.register('payroll', PayrollViewSet, 'payroll')
 
 router.register('loan-repayment', LoanRepaymentViewSet, 'loan-repayment')
@@ -157,7 +157,7 @@ urlpatterns = [
     path('borrowers_savings/', BorrowersSavings),
     path('search_by_working_status/<str:status>',SearchByWorkingStatus),
     path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),
-    path('loan_fees/', LoanFeeList.as_view()),
+    #path('loan_fees/', LoanFeeViewSet.as_view()),
     path('loan_collateral/', LoanCollateralList.as_view()),
     path('loan_collateral/<int:pk>', LoanCollateralDetail.as_view()),
     path('loan_attachment/', LoanAttachmentList.as_view()),

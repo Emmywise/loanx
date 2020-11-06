@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import FileUploadParser
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -121,21 +121,24 @@ class LoanCommentList(APIView):
         return Response(serializer.data)
 
 
-class LoanFeeList(APIView):
-    def post(self, request):
+#class LoanFeeList(APIView):
+ #   def post(self, request):
         # initialize a loan by customer
-        serializer = LoanFeeSerializer(data=request.data)
-        if serializer.is_valid():
+  #      serializer = LoanFeeSerializer(data=request.data)
+   #     if serializer.is_valid():
             # save loan and send loan application email.
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      #      serializer.save()
+       #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request, pk=None):
-        loan_for = request.GET['loan']
-        loan_fee = LoanFee.objects.filter(loan=int(loan_for))
-        serializer = LoanFeeSerializer(loan_fee, many=True)
-        return Response(serializer.data)
+    #def get(self, request, pk=None):
+     #   loan_for = request.GET['loan']
+      #  loan_fee = LoanFee.objects.filter(loan=int(loan_for))
+       # serializer = LoanFeeSerializer(loan_fee, many=True)
+        #return Response(serializer.data)
+class LoanFeeViewSet(viewsets.ModelViewSet):
+    serializer_class = LoanFeeSerializer
+    queryset = LoanFee.objects.all()
 
 class LoanToOfficer(APIView):
     def post(self, request):

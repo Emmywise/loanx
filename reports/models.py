@@ -1,7 +1,8 @@
 from django.db import models
 from django.core.validators import validate_comma_separated_integer_list
 from accounts.models import Branch
-from loans.models import Borrower, Loan
+from loans.models import Loan
+from borrowers.models import Borrower
 
 # Create your models here.
 

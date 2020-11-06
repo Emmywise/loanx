@@ -71,3 +71,8 @@ def calculate_payroll(sender, instance, raw, **kwargs):
 # def configure_recurring_and_send_slip(sender, instance, created):
 #     pass
 
+class Staff(models.Model):
+    user_id = models.OneToOneField(Profile, on_delete=models.SET_NULL, default='', null=True)
+
+    def __str__(self):
+        return self.user_id.user.first_name + ' ' + str(self.user_id.user.last_name) + ' - ' + str(self.user_id.branch)

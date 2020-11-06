@@ -7,8 +7,10 @@ import datetime
 from django.core.exceptions import ValidationError
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from borrowers.models import Borrower
-from accounts.models import Profile, Branch
+#from borrowers.models import Borrower  
+from accounts.models import Profile, Branch, Country
+from cloudinary.models import CloudinaryField
+from staffs.models import Staff
 # Create your models here.
 
 
@@ -130,7 +132,7 @@ class Loan(models.Model):
         ('Wire Transfer', 'Wire Transfer'),
     )   
     branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
-    borrower = models.ForeignKey(Borrower, on_delete=models.DO_NOTHING)
+    borrower = models.ForeignKey('borrowers.Borrower', on_delete=models.DO_NOTHING)
     loan_type = models.ForeignKey(LoanType, on_delete=models.DO_NOTHING)
     principal_amount = models.FloatField(max_length=400, blank=False, default="")
     interest_mode = models.CharField(choices=interest_type_types, max_length=400, blank=True, null=True, default='Percentage Based')
@@ -143,12 +145,13 @@ class Loan(models.Model):
     loan_interest_percentage = models.CharField(max_length=400, blank=True, null=True)
     loan_interest_fixed_amount = models.CharField(max_length=400, blank=True, null=True)
     loan_interest_percentage_period = models.CharField(choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
-    loan_duration = models.IntegerField(default=0)
+    loan_duration = models.PositiveIntegerField(default=0)
     loan_duration_period = models.CharField(choices=loan_duration_period_types,max_length=400, blank=True, null=True)
     repayment_cycles = models.CharField(verbose_name='repayment Cycle', max_length=100, choices=repayment_cycle_choices, default='')
-    decimal_places = models.CharField(
-        choices=decimal_places_types, max_length=400, blank=True, null=True)
+    decimal_places = models.CharField(choices=decimal_places_types, max_length=400, blank=True, null=True)
     interest_start_date = models.DateField(blank=True, null=True)
+    loan_guarantor = models.ManyToManyField('LoanGuarantor', default='', related_name='loan_guarantor', blank=True)
+    loan_collateral = models.ForeignKey('LoanCollateral', on_delete=models.DO_NOTHING, null=True, default='')
 
     maturity_date = models.DateField(blank=True, null=True)
     repayment_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
@@ -172,10 +175,11 @@ class Loan(models.Model):
     total_due_loan_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     total_due_penalty = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     interest = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
-    loan_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
-    #loan_fees = models.ManyToManyField('LoanFee', default=None)
+    #loan_fees = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    loan_fees = models.ManyToManyField('LoanFee', default=None)
     penalty_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0.0)
     loan_score = models.IntegerField(default=0, blank=True, null=True)
+    disbursed_by = models.CharField(max_length=50, choices=disbursed_choices, blank=False, default='Online Transfer')
 
     def get_balance(self):
         return self.repayment_amount - self.amount_paid
@@ -201,33 +205,23 @@ def update_balance(sender, instance, **kwargs):
     instance.loan_score = instance.borrower.loan_score
 
  
-class LoanFee(models.Model):
-    interest_type_types = (
-        ("Percentage Based", "Percentage Based"),
-        ("Fixed Amount Per Cycle", "Fixed Amount Per Cycle"),
-    )
-    # apply_loan_fee_choices = (
-    #     ("Principal", "Principal"),
-    #     ("Interest", "Interest"),
-    #     ("Principal + Interest", "Principal + Interest"),
-    # )
-    name = models.CharField(max_length=128, blank=True, null=True)
-    amount = models.DecimalField(decimal_places=2, max_digits=20, default=0)
-    interest_type = models.CharField(
-        choices=interest_type_types, max_length=100)
-    # apply_loan_fee = models.CharField(
-    #     choices=apply_loan_fee_choices, max_length=100, default='')
-    percentage = models.DecimalField(decimal_places=2, max_digits=20, default=0)
-
-    def __str__(self):
-        return self.name
 
 
 class LoanOfficer(models.Model):
     #loan = models.ManyToManyField(Loan, blank=True, null=True)
-    members = models.ManyToManyField(Loan, through="LoanMembership")
+    #members = models.ManyToManyField(Loan, through="LoanMembership")
     name = models.CharField(max_length=128, blank=True, null=True)
     phonenumber = models.CharField(max_length=128, blank=True, null=True)
+#    staff_id = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True)
+#
+#    def __str__(self):
+#        return self.staff_id.user_id.user.first_name + ' ' + str(self.staff_id.user_id.user.last_name)
+
+#    user_id = models.OneToOneField(Profile, on_delete=models.SET_NULL, default='', null=True)
+
+#    def __str__(self):
+#        return self.user_id.user.first_name + ' ' + str(self.user_id.user.last_name) + ' - ' + str(self.user_id.branch)
+
 
 
 
@@ -407,21 +401,24 @@ class LoanFee(models.Model):
         ("Percentage Based", "Percentage Based"),
         ("Fixed Amount Per Cycle", "Fixed Amount Per Cycle"),
     )
-    apply_loan_fee_choices = (
-        ("Principal", "Principal"),
-        ("Interest", "Interest"),
-        ("Principal + Interest", "Principal + Interest"),
-    )
-    loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
+    #apply_loan_fee_choices = (
+     #   ("Principal", "Principal"),
+      #  ("Interest", "Interest"),
+       # ("Principal + Interest", "Principal + Interest"),
+    #)
+    #loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=128, blank=True, null=True)
-    staff_initiating_it = models.ForeignKey(
-        LoanOfficer, on_delete=models.DO_NOTHING)
+    #staff_initiating_it = models.ForeignKey(
+     #   LoanOfficer, on_delete=models.DO_NOTHING)
     amount = models.DecimalField(decimal_places=2, max_digits=20)
     interest_type = models.CharField(
         choices=interest_type_types, max_length=100)
-    apply_loan_fee = models.CharField(
-        choices=apply_loan_fee_choices, max_length=100)
+    #apply_loan_fee = models.CharField(
+    #    choices=apply_loan_fee_choices, max_length=100)
+    percentage = models.DecimalField(decimal_places=2, max_digits=20, default=0)
 
+    def __str__(self):
+        return self.name
 
 class LoanAttachment(models.Model):
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
@@ -472,7 +469,7 @@ class LoanCollateral(models.Model):
     )
     collateral_type = models.CharField(
         choices=collateral_type_choice, max_length=100)
-    loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
+    #loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=400)
     value = models.DecimalField(max_digits=20, decimal_places=2)
     register_date = models.DateField(blank=True, null=True)
@@ -543,8 +540,8 @@ class LoanGuarantor(models.Model):
         ('Pensioner', 'Pensioner'),
         ('Unemployed', 'Unemployed'),
     )
-    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
-    country = models.CharField(max_length=200)
+#    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
+    country = models.ForeignKey(Country, on_delete=models.SET_NULL, default='', null=True)
     first_name = models.CharField(max_length=200)
     last_name = models.CharField(max_length=200)
     business_name = models.CharField(max_length=400, blank=True, null=True)
@@ -560,7 +557,9 @@ class LoanGuarantor(models.Model):
     zip_code = models.CharField(max_length=10, blank=True, null=True)
     landline_phone = models.CharField(max_length=20, blank=True, null=True)
     working_status = models.CharField(max_length=100, choices=working_status_choices)
-    photo = models.ImageField(upload_to='guarantor', blank=True, null=True)
+    photo = CloudinaryField('image', null=True, blank=True)
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, default='')
+    borrower = models.ForeignKey('borrowers.Borrower', on_delete=models.SET_NULL, null=True, default='')
     description = models.TextField(blank=True, null=True)
 
 

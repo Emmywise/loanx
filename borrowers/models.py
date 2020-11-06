@@ -3,6 +3,8 @@ from django.utils.timezone import now
 from django.contrib.auth.models import User
 from cloudinary.models import CloudinaryField
 from accounts.models import Profile, Country
+import loans.models
+from loans.models import LoanOfficer
 import os
 # Create your models here.
 
@@ -32,7 +34,7 @@ class Borrower(models.Model):
         ('Pensioner', 'Pensioner'),
         ('Unemployed', 'Unemployed'),
     )
-    country = models.ForeignKey(Country, on_delete=models.DO_NOTHING, default=None)
+    country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(
         max_length=400)
@@ -68,6 +70,7 @@ class Borrower(models.Model):
         max_length=400)
     is_activated = models.BooleanField(default=False)
     loan_score = models.PositiveIntegerField(blank=True, null=True)
+    loan_officer = models.ForeignKey(LoanOfficer, on_delete=models.SET_NULL, verbose_name='Loan Officer', null=True)
 
     def __str__(self):
         return self.first_name + " " + self.last_name
