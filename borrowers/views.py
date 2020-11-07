@@ -43,7 +43,7 @@ def get_post_borrower(request):
     if request.method == 'GET':
         ref = request.GET.get("borrower_search")
         if ref:
-            borrower = Borrower.objects.filter(Q(first_name__startswith=ref) | Q(last_name__startswith=ref))
+            borrower = Borrower.objects.filter(Q(first_name__startswith=ref) | Q(middle_name__startswith=ref) | Q(last_name__startswith=ref))
             serializer = BorrowerSerializer(borrower, many=True)
             return Response(serializer.data)
         borrowers = Borrower.objects.all()

@@ -35,7 +35,8 @@ class Borrower(models.Model):
         ('Unemployed', 'Unemployed'),
     )
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
-    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, null=True, blank=True)
+    profile = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    borrower_uid = models.CharField(verbose_name='Borrower Unique ID', max_length=50, blank=True, default='')
     first_name = models.CharField(
         max_length=400)
     middle_name = models.CharField(

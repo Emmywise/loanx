@@ -231,12 +231,12 @@ def update_balance(sender, instance, **kwargs):
 class LoanOfficer(models.Model):
     #loan = models.ManyToManyField(Loan, blank=True, null=True)
     #members = models.ManyToManyField(Loan, through="LoanMembership")
-    name = models.CharField(max_length=128, blank=True, null=True)
-    phonenumber = models.CharField(max_length=128, blank=True, null=True)
-#    staff_id = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True)
-#
-#    def __str__(self):
-#        return self.staff_id.user_id.user.first_name + ' ' + str(self.staff_id.user_id.user.last_name)
+    #name = models.CharField(max_length=128, blank=True, null=True)
+    #phonenumber = models.CharField(max_length=128, blank=True, null=True)
+    staff_id = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.staff_id.user_id.user.first_name + ' ' + str(self.staff_id.user_id.user.last_name)
 
 #    user_id = models.OneToOneField(Profile, on_delete=models.SET_NULL, default='', null=True)
 
@@ -562,7 +562,7 @@ class LoanGuarantor(models.Model):
         ('Unemployed', 'Unemployed'),
     )
 #    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
-    country = models.ForeignKey(Country, on_delete=models.SET_NULL, default='', null=True)
+    country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
     first_name = models.CharField(max_length=200)
     last_name = models.CharField(max_length=200)
     business_name = models.CharField(max_length=400, blank=True, null=True)
@@ -579,8 +579,8 @@ class LoanGuarantor(models.Model):
     landline_phone = models.CharField(max_length=20, blank=True, null=True)
     working_status = models.CharField(max_length=100, choices=working_status_choices)
     photo = CloudinaryField('image', null=True, blank=True)
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, default='')
-    borrower = models.ForeignKey('borrowers.Borrower', on_delete=models.SET_NULL, null=True, default='')
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True)
+    borrower = models.ForeignKey('borrowers.Borrower', on_delete=models.SET_NULL, null=True)
     description = models.TextField(blank=True, null=True)
 
 
