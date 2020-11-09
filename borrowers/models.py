@@ -65,7 +65,7 @@ class Borrower(models.Model):
     land_line = models.CharField(
         max_length=400, blank=True, null=True)
     working_status = models.CharField(
-        choices=working_status_choices, max_length=100)
+        choices=working_status_choices, max_length=100, blank=True)
     borrower_photo = CloudinaryField('image',null=True, blank=True)
     description = models.CharField(
         max_length=400)
