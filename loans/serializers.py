@@ -29,9 +29,13 @@ class LoanCommentSerializer(serializers.ModelSerializer):
         model = LoanComment
 
 class LoanOfficerSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
     class Meta:
         fields = '__all__'
         model = LoanOfficer
+    def get_name(self, obj):
+        name = obj.staff_id.user_id.user.first_name
+        return name
 
 class LoanDisbursementSerializer(serializers.ModelSerializer):
     class Meta:

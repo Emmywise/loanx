@@ -39,6 +39,11 @@ class BorrowerSerializer(serializers.ModelSerializer):
         counts = Loan.objects.all().filter(borrower=obj.id).filter(status="fully paid").count()
         return counts
 
+class BorrowerSerializer2(serializers.ModelSerializer):
+    class Meta:
+        model = Borrower
+        read_only_fields = ('is_activated',)
+        fields = '__all__'
 
 class MembershipSerializer(serializers.ModelSerializer):
     class Meta:

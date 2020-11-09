@@ -398,6 +398,37 @@ class LoanGuarantorViewSet(ModelViewSet):
         return queryset
 
 
+    def create(self, request, *args, **kwargs):
+        check_branch = Branch.objects.filter(id=request.data['branch']).exists()
+        if check_branch:
+            get_branch = Branch.objects.get(id=request.data['branch'])
+        if get_branch.is_open == False:
+            return Response({"Error": "Selected Branch is not opened yet. Choose another branch for this guarantor."}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data['photo'] != '':
+            upload_data = cloudinary.uploader.upload(request.data['photo'], resource_type="auto")
+            request.data['photo'] = upload_data['secure_url']
+        serializer = LoanGuarantorSerializer2(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # instance = self.perform_create(serializer)
+
+        serializer.save()
+        obj = serializer.save()
+
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None):
+        instance = self.get_object()
+        if request.data['photo'] != '':
+            upload_data = cloudinary.uploader.upload(request.data['photo'], resource_type="auto")
+            request.data['photo'] = upload_data['secure_url']
+        serializer = LoanGuarantorSerializer2(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 class LoanDisbursementViewSet(ModelViewSet):
     serializer_class = LoanDisbursementSerializer
 
