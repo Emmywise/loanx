@@ -24,6 +24,7 @@ from .models import *
 from accounts.models import (
     Profile
 )
+from borrowers.models import *
 from borrowers.serializers import BorrowerSerializer
 from .utils import details_from_bvn, compare_dates, get_loan_score, get_account_name
 from .save_auth_code import ddebitCode
@@ -456,66 +457,70 @@ class GuarantorFileViewSet(ModelViewSet):
 class RunBvnCheck(APIView):
 
     def post(self, request):
-        borrower = request.data.get("borrower")
+        profile = request.data.get("profile")
         bvn = request.data.get("bvn")
         dob = request.data.get("dob")
         reference_no = 'loanx' + str(random.randint(100000000, 999999999))
         rez = details_from_bvn(bvn, reference_no)
-        print(rez)
-        dob_check = (compare_dates(rez['date_of_birth'], dob))
-        if not dob_check:
-            return Response({"message": "non-matching credentials provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if rez == False:
+            return Response({"message": "Error BVN Details"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # print(rez['date_of_birth'])
+            dob_check = (compare_dates(rez['date_of_birth'], dob))
+            print(dob_check)
+            if not dob_check:
+                return Response({"message": "non-matching credentials provided"},
+                                status=status.HTTP_400_BAD_REQUEST)
         try:
-            borrower_obj = Borrower.objects.get(pk=borrower)
+            profile_obj = User.objects.get(pk=profile)
             try:
-                borrower_obj.gender = rez['gender']
+                profile_obj.gender = rez['gender']
             except:
                 pass
             try:
-                borrower_obj.last_name = rez['last_name']
+                profile_obj.last_name = rez['last_name']
             except:
                 pass
             try:
-                borrower_obj.first_name = rez['first_name']
+                profile_obj.first_name = rez['first_name']
             except:
                 pass
             try:
-                borrower_obj.middle_name = rez['middle_name']
+                profile_obj.middle_name = rez['middle_name']
             except:
                 pass
             try:
-                borrower_obj.email = rez['email']
+                profile_obj.email = rez['email']
             except:
                 pass
             try:
-                borrower_obj.address = rez['residential_address']
+                profile_obj.address = rez['residential_address']
             except:
                 pass
             try:
-                borrower_obj.city = rez['city']
+                profile_obj.city = rez['city']
             except:
                 pass
             try:
-                borrower_obj.date_of_birth = dob
+                profile_obj.date_of_birth = dob
             except:
                 pass
             try:
-                borrower_obj.bvn = bvn
+                profile_obj.bvn = bvn
             except:
                 pass
             try:
-                borrower_obj.email = rez['email']
+                profile_obj.email = rez['email']
             except:
                 pass
             try:
-                borrower_obj.phone = rez['phone_number']
+                profile_obj.phone = rez['phone_number']
             except:
                 pass
-            borrower_obj.save()
-            return Response({"message": "successfully updated from api"}, status=status.HTTP_200_OK)
-        except Borrower.DoesNotExist as err:
-            return Response({"message": "borrower with the id does not exist"},
+            profile_obj.save()
+            return Response({"message": rez}, status=status.HTTP_200_OK)
+        except User.DoesNotExist as err:
+            return Response({"message": "User with the id does not exist"},
                             status=status.HTTP_404_NOT_FOUND)
 
 

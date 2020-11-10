@@ -89,7 +89,8 @@ def details_from_bvn(bvn, ref):
     }
     x = requests.post(url, data=json.dumps(myobj), headers=headers)
     results = {}
-    print(type(x.json()['data']['provider_response']['dateOfBirth']))
+    # print(x)
+    # print(x.json()['data']['provider_response']['dateOfBirth'])
     results['first_name'] = x.json()['data']['provider_response']['firstName']
     results['middle_name'] = x.json()['data']['provider_response']['middleName']
     results['last_name'] = x.json()['data']['provider_response']['lastName']
@@ -116,6 +117,8 @@ def compare_dates(date_from_api, date_by_loanee):
     new_output[0] = splitted_date_from_api[2]
     new_output[1] = month_match[splitted_date_from_api[1]]
     new_output[2] = splitted_date_from_api[0]
+    print(new_output)
+    print(splitted_loanee_date)
     if (splitted_loanee_date == new_output):
         return True
     else:
