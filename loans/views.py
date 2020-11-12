@@ -29,19 +29,274 @@ from borrowers.serializers import BorrowerSerializer
 from .utils import details_from_bvn, compare_dates, get_loan_score, get_account_name
 from .save_auth_code import ddebitCode
 from .direct_debit import directDebit
+from .interests import *
+from loan_management_system import settings, urls
+
+today = datetime.date.today()
+
+urlconf = __import__(settings.ROOT_URLCONF, {}, {}, [''])
 
 
 class LoanView(APIView):
 
     def post(self, request):
+        check_branch = Branch.objects.filter(id=request.data['branch']).exists()
+        if check_branch:
+            get_branch = Branch.objects.get(id=request.data['branch'])
+        else:
+            return Response({"Error": "Branch ID does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+        if get_branch.is_open == False:
+            return Response({"Error": "Selected Branch is not opened yet. Choose another branch for this loan."}, status=status.HTTP_400_BAD_REQUEST)
         # initialize a loan by customer
         serializer = LoanSerializer(data=request.data)
+        
+        print(request.data)
         if serializer.is_valid():
-            # save loan and send loan application email.
             serializer.save()
+            obj = serializer.save()
             res = serializer.data
-            return Response(res, status=status.HTTP_200_OK)
+            get_bor = Borrower.objects.get(id=res['borrower'])
+            get_loan_officer = LoanOfficer.objects.get(id=get_bor.loan_officer.id)
+            OfficerLoan.objects.create(loan=obj, loan_officer=get_loan_officer)
+            # Return Back the loan ID that was created...
+            the_loan = Loan.objects.get(id=obj.id)
+            loan_interest_percentage = float(the_loan.loan_interest_percentage)
+            principal_amount = float(the_loan.principal_amount)
+            no_of_repayments = int(the_loan.no_of_repayments)
+            interest_method = the_loan.interest_method
+            loan_duration_period = the_loan.loan_duration_period
+            repayment_cycles = the_loan.repayment_cycles
+            duration = int(the_loan.duration)
+            interest_rate = float(the_loan.loan_interest_percentage)
+            loan_interest_percentage_period = the_loan.loan_interest_percentage_period
+
+            interest = float(loan_interest_percentage)/100
+            loan_interest = float(principal_amount)*interest
+            principal_payment = round(float(principal_amount)/float(no_of_repayments), 2)
+            current_time = today
+            payment_date = current_time
+            try:
+            	existing_schedules = LoanScheduler.objects.filter(loan = the_loan).delete()
+            except:
+            	pass
+
+            if interest_method == 'Flat Rate':
+            	repayment_amount = round((loan_interest)+(principal_payment), 2)
+            	flat_rate = Flat_Rate(principal_amount, loan_interest_percentage, no_of_repayments)
+            	loan_repayment_amount = flat_rate+principal_amount
+            	
+            	for duration in range(1, int(no_of_repayments) + 1):
+            		payment_dates = get_payment_dates(loan_duration_period, repayment_cycles, current_time, duration, payment_date)
+
+            		off_principal = round((principal_amount)/(no_of_repayments), 2)
+            		off_interest = round((flat_rate)/(no_of_repayments), 2)
+            		total_due = round(float(off_principal)+float(off_interest), 2)
+            		off_paid = 0.00
+            		d_due = round((principal_amount)/(no_of_repayments), 2)
+            		d_due2 = round((flat_rate)/(no_of_repayments), 2)
+            		d_due3 = round((d_due)+(d_due2), 2)
+            		new_payment = float(off_principal)+float(off_interest)
+            		pending_due = float(total_due)-float(the_loan.amount_paid)
+            		principal_payment -= float(principal_amount/no_of_repayments)
+            		principal_payment = round((principal_payment) + float(principal_amount/no_of_repayments), 2)
+            		total_due_amount = round(d_due3 * no_of_repayments, 2)
+
+            		my_fee = 0
+
+            		loan_fees = the_loan.loan_fees.all()
+            		for fees in loan_fees:
+            			my_fee += fees.amount
+
+            		loan_scheduler = LoanScheduler.objects.create(
+			            loan=the_loan,
+			            description = "Repayment",
+			            date=payment_dates,
+			            principal = off_principal,
+			            interest = off_interest,
+			            fees = round(my_fee/the_loan.no_of_repayments, 2),
+			            penalty = round(the_loan.penalty_amount/the_loan.no_of_repayments, 2),
+			            due = d_due3,
+			            paid = 0.00,
+			            principal_paid = 0.00,
+			            pending_due = round(pending_due, 2),
+			            total_due = round(total_due, 2),
+			            principal_due = off_principal,
+			            amount=principal_payment,
+			            status='pending'
+			        )
+
+            	the_loan.interest_rate = Decimal(the_loan.interest_rate)
+            	the_loan.interest_rate = Decimal(the_loan.interest_rate)
+            	loan_interest += (interest_rate/100) * principal_amount
+            	the_loan.interest = Decimal(flat_rate)
+            	the_loan.total_due_principal = principal_amount
+            	the_loan.total_due_interest = loan_repayment_amount
+            	the_loan.total_due_fees = the_loan.loan_fees
+            	the_loan.total_due_penalty = the_loan.penalty_amount
+            	the_loan.loan_release_date = current_time
+            	the_loan.remaining_balance = loan_repayment_amount
+            	the_loan.repayment_amount = loan_repayment_amount
+
+            	the_loan.save()
+            	loan_schedules = LoanScheduler.objects.filter(loan = the_loan)
+            	last_loan_schedules = LoanScheduler.objects.filter(loan = the_loan).last()
+            	next_loan_payment = LoanScheduler.objects.filter(loan=the_loan).filter(status='pending').first()
+            	Loan.objects.filter(id=the_loan.id).update(maturity_date=last_loan_schedules.date, current_repayment_amount=next_loan_payment.due)
+            	serializer = LoanSchedulerSerializer(loan_schedules, many=True)
+
+	            # Get the id of current loansReducing Balance - Equal Principal
+	            # loans = Loan.objects.all()
+	            # max_acc_no = loans.aggregate(Max('account_no'))
+	            # max_acc_id = max_acc_no['account_no__max']
+	            # max_acc_no_int = int(max_acc_id)
+	            # max_acc_no_add = max_acc_no_int + 1
+	            # # Lets update the account no with this one.
+	            # Loan.objects.filter(id=res['id']).update(account_no=max_acc_no_add)
+            	# return Response({"message": "loan has been created...", "schedules":serializer.data}, status=status.HTTP_201_CREATED)
+            	return Response({"message": res}, status=status.HTTP_201_CREATED)
+            # save loan and send loan application email.
+            #serializer.save()
+            #res = serializer.data
+            #return Response(res, status=status.HTTP_200_OK)
+        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            elif interest_method == 'Reducing Balance - Equal Principal':
+            	if loan_duration_period == "Days":
+            		period = int_day(duration, loan_interest_percentage_period, loan_duration_period, interest)
+            		equal_principal = Equal_Principal(principal_amount, duration, loan_interest_percentage_period, loan_duration_period, interest, principal_payment, period)
+            	elif loan_duration_period == "Weeks":
+            		period = int_week(duration, loan_interest_percentage_period, loan_duration_period, interest)
+            		equal_principal = Equal_Principal(principal_amount, duration, loan_interest_percentage_period, loan_duration_period, interest, principal_payment, period)
+            	elif loan_duration_period == "Months":
+            		period = int_month(duration, loan_interest_percentage_period, loan_duration_period, interest)
+            		equal_principal = Equal_Principal(principal_amount, duration, loan_interest_percentage_period, loan_duration_period, interest, principal_payment, period)
+            	elif loan_duration_period == "Years":
+            		period = int_year(duration, loan_interest_percentage_period, loan_duration_period, interest)
+            		equal_principal = Equal_Principal(principal_amount, duration, loan_interest_percentage_period, loan_duration_period, interest, principal_payment, period)
+
+            	equal_principal = round(equal_principal, 2)
+            	interest_schedule = equal_principal/no_of_repayments
+            	principal_due = principal_amount/no_of_repayments
+
+            	pend_due = float(principal_amount)/float(no_of_repayments)
+            	pend_due = pend_due+float(equal_principal)
+            	principal_plus_interest = 0.0
+            	total_interest = 0
+            	amount = principal_amount
+            	total_loan_fees = 0.0
+            	total_repayment_amount_per_schedule = principal_amount / no_of_repayments
+
+            	for duration in range(1, int(no_of_repayments) + 1):
+            		payment_dates = get_payment_dates(loan_duration_period, repayment_cycles, current_time, duration, payment_date)
+            		repayment_schedule = principal_due + (principal_amount * (interest_rate / 100))
+            		principal_plus_interest += repayment_schedule
+
+            		due = float(principal_amount)/float(no_of_repayments)
+            		due = due+float(equal_principal)
+
+            		equal_principal -= round(interest_schedule, 2)
+            		reducing_interest = equal_principal+interest_schedule
+
+            		principal_schedule = principal_amount/no_of_repayments
+            		increasing_principal = principal_schedule - principal_due
+            		principal_amt = principal_amount/no_of_repayments
+            		amount -= principal_amt
+            		increasing_principal = round((amount) + float(principal_schedule), 2)
+
+
+            		pen_due = (float(principal_amount)/float(no_of_repayments)) + float(equal_principal)
+            		pend_due += float(due) - float(interest_schedule)
+            		pending_due = (pend_due - pen_due)
+            		total_due = (pend_due - pen_due)
+
+            		loan_scheduler = LoanScheduler.objects.create(
+			            loan=the_loan,
+			            description = "Repayment",
+			            date=payment_dates,
+			            principal = round(Decimal(principal_amount)/Decimal(no_of_repayments), 2),
+			            interest = round(reducing_interest, 2),
+			            fees = total_loan_fees/no_of_repayments,
+			            penalty = 0.00,
+			            due=round(due, 2),
+			            paid = 0.00,
+			            pending_due = round(pending_due, 2),
+			            total_due = total_due,
+			            principal_due = round(increasing_principal, 2),
+			            amount = round(increasing_principal, 2),
+			            # Principal Outstanding - Principal Due [for each cycle] (Reducing),
+			            status='pending'
+			            )
+            		principal_amount -= total_repayment_amount_per_schedule
+            		loan_fees = the_loan.loan_fees.all()
+            		total_loan_fee = 0.0
+            		the_loan.interest = equal_principal
+            	the_loan.total_due_principal = round((the_loan.principal_amount)/(the_loan.no_of_repayments) * (the_loan.no_of_repayments), 2)
+            	the_loan.total_due_fees = total_loan_fees
+            	the_loan.total_due_penalty = 0.00
+            	the_loan.save()
+            	loan_schedules = LoanScheduler.objects.filter(loan = the_loan)
+            	get_interest = LoanScheduler.objects.filter(loan = the_loan)
+            	interest = []
+            	for i in get_interest:
+            		interest.append(i.interest)
+            	sum_interest=0
+            	for element in interest:
+            		sum_interest+=element
+            	total_due_interest = sum_interest + the_loan.principal_amount
+            	last_loan_schedules = LoanScheduler.objects.filter(loan = the_loan).last()
+            	next_loan_payment = LoanScheduler.objects.filter(loan=the_loan).filter(status='pending').first()
+            	Loan.objects.filter(id=the_loan.id).update(current_repayment_amount=next_loan_payment.due, interest=math.ceil(sum_interest), remaining_balance=math.ceil(principal_amount+float(sum_interest)), repayment_amount=math.ceil(principal_amount+float(sum_interest)), total_due_interest=math.ceil(sum_interest), maturity_date=last_loan_schedules.date)
+            	serializer = LoanSchedulerSerializer(loan_schedules, many=True)
+
+            	# return Response({"success": "loan has been disbursed", "schedules":serializer.data}, status=status.HTTP_201_CREATED)
+            	return Response({"success": res}, status=status.HTTP_201_CREATED)
+            elif interest_method == 'Interest-Only':
+            	for duration in range(1, int(no_of_repayments) + 1):
+            		interest_only = Interest_Only(principal_amount, interest_rate, no_of_repayments)
+            		loan_repayment_amount = interest_only
+            		interestonly = interest_only
+
+            		my_fee = 0
+            		loan_fees = the_loan.loan_fees.all()
+            		for fees in loan_fees:
+            			my_fee += fees.amount
+
+            		loan_scheduler = LoanScheduler.objects.create(
+			            loan=the_loan,
+			            description = "Repayment",
+			            date=payment_date,
+			            principal = 0,
+			            interest = math.ceil(interestonly),
+			            fees = math.ceil(my_fee/the_loan.no_of_repayments),
+			            penalty = math.ceil(the_loan.penalty_amount/the_loan.no_of_repayments),
+			            due = math.ceil(interestonly),
+			            paid = 0.00,
+			            principal_paid = 0.00,
+			            pending_due = math.ceil(interestonly),
+			            total_due = math.ceil(interestonly),
+			            principal_due = 0,
+			            amount = math.ceil(the_loan.principal_amount),
+			            status = 'pending'
+			            )
+            		the_loan.interest_rate = Decimal(the_loan.interest_rate)
+            		the_loan.interest = interestonly
+            		the_loan.total_due_principal = principal_amount
+            		the_loan.total_due_interest = loan_repayment_amount
+            		the_loan.total_due_fees = the_loan.loan_fees
+            		the_loan.total_due_penalty = the_loan.penalty_amount
+            		the_loan.remaining_balance = loan_repayment_amount
+            		the_loan.repayment_amount = loan_repayment_amount
+            		the_loan.save()
+            		loan_schedules = LoanScheduler.objects.filter(loan = the_loan)
+            		last_loan_schedules = LoanScheduler.objects.filter(loan = the_loan).last()
+            		next_loan_payment = LoanScheduler.objects.filter(loan=the_loan).filter(status='pending').first()
+            		LoanScheduler.objects.filter(id = last_loan_schedules.id).update(amount=Decimal(last_loan_schedules.interest)+Decimal(the_loan.principal_amount))
+            		Loan.objects.filter(id=the_loan.id).update(maturity_date=last_loan_schedules.date, current_repayment_amount=next_loan_payment.due)
+            		serializer = LoanSchedulerSerializer(loan_schedules, many=True)
+            	# return Response({"message": "loan has been disbursed..." + " Total Interest to be paid is " + str(round(interestonly, 2)), "schedules":serializer.data}, status=status.HTTP_201_CREATED)
+            	return Response({"message": res}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     # def get(self, request, pk=None):
     #     loan = Loan.objects.all()
@@ -51,6 +306,9 @@ class LoanView(APIView):
         ref = request.GET.get("ref")
         loan_status = request.GET.get("status")
         borrower = request.GET.get("borrower")
+        guarantor = request.GET.get("guarantor")
+        disbursed = request.GET.get("disbursed")
+        approved = request.GET.get("approved")
         if ref: 
             try:
                 loan = Loan.objects.get(pk=ref)
@@ -67,6 +325,35 @@ class LoanView(APIView):
             except ObjectDoesNotExist:
                 return Response({"message": "loan does not exist"},
                                 status=status.HTTP_404_NOT_FOUND)
+        if disbursed and approved:
+            queryset_list = Loan.objects.all()
+            queryset_list = queryset_list.filter(disbursed=disbursed)
+            queryset_list = queryset_list.filter(approved=approved)
+            serializer = LoanSerializer(queryset_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        elif disbursed:
+            try:
+                loan = Loan.objects.filter(disbursed=disbursed)
+                rez = []
+                for each_loan_dis_app in loan:
+                    serializer = LoanSerializer(each_loan_dis_app).data
+                    rez.append(serializer)
+                return Response(rez, status=status.HTTP_200_OK)
+            except ObjectDoesNotExist:
+                return Response({"message": "loan does not exist"},
+                                status=status.HTTP_404_NOT_FOUND)
+        elif approved:
+            try:
+                loan = Loan.objects.filter(approved=approved)
+                rez = []
+                for each_loan_dis_app in loan:
+                    serializer = LoanSerializer(each_loan_dis_app).data
+                    rez.append(serializer)
+                return Response(rez, status=status.HTTP_200_OK)
+            except ObjectDoesNotExist:
+                return Response({"message": "loan does not exist"},
+                                status=status.HTTP_404_NOT_FOUND)
+        
         if borrower:
             loan = Loan.objects.filter(borrower=borrower)
             rez = []
@@ -102,6 +389,196 @@ class LoanView(APIView):
         loan = Loan.objects.get(pk=pk)
         loan.delete()
         return Response({"message": "loan deleted successfully!"})
+
+class ApproveLoanRepaymentViewSet(ModelViewSet):
+    serializer_class = LoanRepaymentSerializer
+    queryset = LoanRepayment.objects.all()
+
+    def partial_update(self, request, pk):
+        loan_obj = self.get_object()
+        get_loan_repayment = LoanRepayment.objects.get(id=loan_obj.id)
+        if get_loan_repayment.status == 'rejected':
+            return Response({"Error": "Repayment is declined and cannot be changed except delete."}, status=status.HTTP_400_BAD_REQUEST)
+        if get_loan_repayment.status == 'accepted':
+            return Response({"Error": "Repayment is approved and cannot be changed except delete."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = LoanRepaymentSerializer2(loan_obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            obj = serializer.save()
+            if obj.status == "accepted":
+                collector = obj.collector
+                collector = LoanOfficer.objects.get(pk = collector.id)
+                amount = obj.amount
+                sent_amount = amount
+                amount_paid = obj.amount_paid
+                interest = obj.interest
+                interest = interest/100
+                sent_interest = interest
+                amount_taken
+                loan = obj.loan.id
+                repayment_mode = obj.repayment_mode
+                comment = obj.comment
+                date = obj.date
+                payment_type = obj.payment_type
+                proof_of_payment = obj.proof_of_payment
+                the_loan = Loan.objects.get(pk = loan)
+                loan_total_due_interest = the_loan.total_due_interest
+                try:
+                    Outstanding_principal = amount
+                    def calculate_interest (Outstanding_principal):
+                        return Outstanding_principal * interest_rate
+                    while Outstanding_principal > 0:
+                        amount_paid = amount_paid - calculate_interest(outstanding_principal)
+                        amount_paid = (amount_paid)
+                        outstanding_principal = Outstanding_principal.append()
+                        left_to_be_paid.append(outstanding_principal)
+                        return outstanding_principal
+                except LoanRepayment.DoesNotExist:
+                    raise Http404  
+
+
+
+                # Loan.objects.filter(id=loan).update(amount_paid=new_amount)
+                #try:
+                #    if(the_loan.amount_paid == None):
+                #        the_loan.amount_paid = 0.00
+                #    if(the_loan.remaining_balance == 0.00):
+                #        the_loan.status = "fully paid"
+                #    the_loan.amount_paid += amount
+                #    the_loan.remaining_balance -= amount
+                #    the_loan.total_due_interest -= amount
+                #    the_loan.total_due_principal -= amount
+                #    the_loan.save()
+                #except:
+                #    pass
+
+                get_schedule = LoanScheduler.objects.filter(loan = loan).order_by("date")
+                get_last_schedule = LoanScheduler.objects.filter(loan = loan).last()
+                get_last_schedule = LoanScheduler.objects.filter(loan = loan).filter(status='pending').first()
+                the_schedule = get_last_schedule
+                get_pdue = LoanScheduler.objects.filter(loan = loan).order_by("date").exclude(status='settled').first()
+                get_past_due = LoanScheduler.objects.filter(loan = loan).order_by("date").exclude(status='settled').first()
+                get_next_due = LoanScheduler.objects.filter(loan = loan).order_by("date").exclude(status='settled').first()
+                if get_past_due == None:
+                    past_due = datetime.date.today()
+                else:
+                    past_due = get_past_due.date
+                if get_next_due == None:
+                    next_due = datetime.date.today()
+                else:
+                    next_due = get_next_due.date
+                if get_pdue == None:
+                    pending_due = 0
+                else:
+                    pending_due = get_pdue.pending_due
+                if len(get_schedule) == 0:
+                    return Response({"msg":"open loan found"})
+
+                for unit in get_schedule:
+                    if(unit.status != "settled"):
+                        if(Decimal(amount) < unit.amount):
+                            unit.due -= Decimal(amount)
+                            unit.paid += Decimal(amount)
+                            unit.pending_due -= Decimal(amount)
+                            unit.total_due -= Decimal(amount)
+                            ppaid = Decimal(unit.paid) - Decimal(unit.interest)
+                            if Decimal(amount) >= unit.interest:
+                                unit.principal_paid = ppaid
+                                unit.principal_due -= Decimal(unit.paid) - Decimal(unit.interest)
+                            else:
+                                unit.principal_due -= Decimal(amount)
+                                unit.principal_paid = Decimal(unit.paid) - Decimal(unit.interest)
+                            # unit.principal_due -= int(amount)
+                            amount = 0
+                            unit.save()
+                        else:
+                            unit.status = "settled"
+                            unit.paid = unit.due
+                            unit.pending_due = 0
+                            unit.total_due = 0
+                            unit.principal_due = 0
+                            amount -= unit.due
+                            unit.amount = 0
+                            unit.save()
+                    else:
+                        pass
+                    # if(unit.status != "settled"):
+                    #     if(int(amount) <= int(unit.amount)):
+                    #         print("This")
+                    #         unit.amount -= int(amount)
+                    #         unit.paid += int(amount)
+                    #         unit.pending_due += int(amount)
+                    #         unit.total_due -= int(amount)
+                    #         ppaid = int(unit.paid) - int(unit.interest)
+                    #         if int(amount) >= unit.interest:
+                    #             unit.principal_paid = ppaid
+                    #             unit.principal_due -= int(unit.paid) - int(unit.interest)
+                    #         else:
+                    #             unit.principal_due -= int(amount)
+                    #             # unit.principal_paid = int(unit.paid) - int(unit.interest)
+                    #         amount = 0
+                    #         unit.save()
+                    #     elif(int(amount) > int(unit.amount)):
+                    #         print("That")
+                    #         # unit.amount -= int(amount)
+                    #         # unit.paid += int(amount)
+                    #         # unit.principal_paid += int(unit.paid) - int(unit.interest)
+                    #         unit.pending_due = 0
+                    #         unit.principal_due = 0
+                    #         unit.total_due = 0
+                    #         amount = 0
+                    #         unit.status = 'settled'
+                    #         unit.save()
+                    #     # elif(unit.status == "pending") and the_loan.amount_paid > 0 and the_loan.remaining_balance == 0:
+                    #     #     unit.status = "settled"
+                    #     #     print("Hmmmmm")
+                    #     #     unit.paid = unit.due
+                    #     #     unit.pending_due = 0
+                    #     #     unit.total_due = 0
+                    #     #     unit.principal_due = 0
+                    #     #     amount -= unit.amount
+                    #     #     unit.amount = 0
+                    #     #     unit.save()
+                    #     #     Loan.objects.filter(id=the_loan.id).update(status="fully paid")
+                    #     else:
+                    #         print("Finally")
+                    #         unit.status = "settled"
+                    #         # unit.principal_paid = int(unit.paid) - int(unit.interest)
+                    #         unit.paid = unit.due
+                    #         unit.pending_due = 0
+                    #         unit.total_due = 0
+                    #         unit.principal_due = 0
+                    #         amount -= unit.amount
+                    #         unit.amount = 0
+                    #         unit.save()
+
+                loan_payment = LoanRepayment.objects.filter(id=obj.id).update(
+                    loan=the_loan,\
+                    date=datetime.date.today(),\
+                    amount=sent_amount,\
+
+                    repayment_mode = repayment_mode,\
+                    payment_type = payment_type,\
+                    proof_of_payment = proof_of_payment,\
+                    collector = collector,\
+                    comment = comment,\
+                    pending_due = pending_due,\
+                    past_due_date = past_due,\
+                    next_due_date = next_due,\
+                    status = 'accepted'
+                )
+                LoanScheduler.objects.filter(loan = the_loan)
+                get_next_schedule = LoanScheduler.objects.filter(loan = loan).filter(status='pending').first()
+                if get_next_schedule:
+                    Loan.objects.filter(id = the_loan.id).update(last_paid_date = datetime.date.today(), current_repayment_amount=get_next_schedule.due)
+                serializer2 = LoanSchedulerSerializer(get_schedule, many=True)
+                return Response({"msg": "repayment approved successfully","schedule": serializer2.data})
+
+
+
+            elif obj.status == 'rejected':
+                return Response({"message": "Repayment has been declined"}, status=status.HTTP_200_OK)
+        return Response({"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoanCommentList(APIView):

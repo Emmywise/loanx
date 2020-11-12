@@ -1,8 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 import random
+import decimal
+from decimal import Decimal
 import string
+from datetime import timedelta
+import datetime
+
 # Create your models here.
 
 
@@ -48,9 +54,22 @@ class Branch(models.Model):
                                                        choices=holiday_effect_on_loan_schedule_choices)
     capital = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     loan_generate_string = models.CharField(max_length=400) # unique prepend string eg BR-, ILR-
-
+    open_date = models.DateField()
+    is_open = models.BooleanField(default=False)
+    remaining_capital = models.DecimalField(max_digits=100, decimal_places=2, blank=True, default=0.00)
+    spent_capital = models.DecimalField(max_digits=100, decimal_places=2, blank=True, default=0.00)
     def __str__(self):
         return self.name
+
+@receiver(pre_save, sender=Branch)
+def update_remaining_capital(sender, instance, **kwargs):
+    instance.remaining_capital = Decimal(instance.capital) - Decimal(instance.spent_capital)
+
+@receiver(pre_save, sender=Branch)
+def update_is_open(sender, instance, **kwargs):
+    if instance.open_date <= datetime.date.today():
+        instance.is_open = True
+
 
 
 class BranchHoliday(models.Model):

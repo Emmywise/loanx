@@ -5,7 +5,7 @@ from .models import (
     LoanCollateral, LoanGuarantor,
     GuarantorFile, LoanDisbursement, LoanScheduler, LoanMembership
 )
-
+from .serializers import *
 from .models import (Loan, LoanComment, LoanOfficer, LoanFee,
 LoanCollateral, LoanAttachment, LoanRepayment, GuarantorFile, LoanGuarantor, LoanDisbursement)
 
@@ -92,6 +92,26 @@ class LoanGuarantorSerializer(serializers.ModelSerializer):
 
 
 class LoanRepaymentSerializer(serializers.ModelSerializer):
+    loan = serializers.SerializerMethodField()
+    collector = serializers.SerializerMethodField()
+
+
+    class Meta:
+        fields = '__all__'
+        model = LoanRepayment
+
+    def get_loan(self, obj):
+        name = obj.loan.loan_title
+        return name
+
+    def get_collector(self, obj):
+        if obj.collector:
+            name = obj.collector.staff_id.user_id.user.first_name + ' ' + str(obj.collector.staff_id.user_id.user.last_name)
+            return name
+        else:
+            return False
+
+class LoanRepaymentSerializer2(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'

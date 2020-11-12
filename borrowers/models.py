@@ -6,6 +6,8 @@ from accounts.models import Profile, Country
 import loans.models
 from loans.models import LoanOfficer
 import os
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 # Create your models here.
 
 
@@ -75,6 +77,19 @@ class Borrower(models.Model):
 
     def __str__(self):
         return self.first_name + " " + self.last_name
+@receiver(pre_save, sender=Borrower)
+def update_borrower_uid(sender, instance, **kwargs):
+    mobile = instance.mobile
+    if len(mobile) > 10:
+        m = mobile.startswith("234")
+        if m:
+            s = mobile[3:]
+            instance.borrower_uid = s
+        else:
+            s = mobile[1:]
+            instance.borrower_uid = s
+    else:
+        instance.borrower_uid = mobile
 
 
 class BorrowerGroup(models.Model):

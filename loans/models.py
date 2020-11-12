@@ -161,6 +161,7 @@ class Loan(models.Model):
     loan_interest_fixed_amount = models.CharField(max_length=400, blank=True, null=True)
     loan_interest_percentage_period = models.CharField(choices=loan_interest_percentage_period_types, max_length=400, blank=True, null=True)
     loan_duration = models.PositiveIntegerField(default=0)
+    no_of_repayments = models.PositiveIntegerField(default=1, blank=True, null=True)
     loan_duration_period = models.CharField(choices=loan_duration_period_types,max_length=400, blank=True, null=True)
     repayment_cycles = models.CharField(verbose_name='repayment Cycle', max_length=100, choices=repayment_cycle_choices, default='')
     decimal_places = models.CharField(choices=decimal_places_types, max_length=400, blank=True, null=True)
@@ -202,6 +203,9 @@ class Loan(models.Model):
     disbursed_by = models.CharField(max_length=50, choices=disbursed_choices, blank=False, default='Online Transfer')
     loan_description = models.TextField(default='', blank=True)
     account_number = models.CharField(verbose_name='Account Number', max_length=20, blank=False, default='')
+    def __str__(self):
+        return self.account_no + ' - ' + str(self.borrower.first_name) + '  ' + str(self.borrower.last_name)
+
     def get_balance(self):
         return self.repayment_amount - self.amount_paid
 
@@ -213,19 +217,80 @@ class Loan(models.Model):
 
 @receiver(pre_save, sender=Loan)
 def update_interest_rate(sender, instance, **kwargs):
-    if instance.interest_rate == None:
-        instance.interest_rate = instance.loan_type.interest_rate
+    if instance.interest_mode == 'Percentage Based':
+        if instance.loan_interest_percentage == 'null' and instance.interest_rate == 'null':
+    # if instance.interest_rate == None:
+            instance.interest_rate = instance.loan_type.interest_rate
+            instance.loan_interest_percentage = instance.loan_type.interest_rate
+        elif instance.loan_interest_percentage != 'null':
+            instance.interest_rate = instance.loan_interest_percentage
+        elif instance.interest_rate != 'null':
+            instance.loan_interest_percentage = instance.loan_type.interest_rate
+    elif instance.interest_mode == 'Fixed Amount Per Cycle':
+        instance.fixed_amount = instance.loan_interest_fixed_amount
     if instance.penalty_rate == None:
         instance.penalty_rate = instance.loan_type.penalty_rate
 
 @receiver(pre_save, sender=Loan)
+def update_penalty_rate(sender, instance, **kwargs):
+    if instance.penalty_rate == 'null':
+        instance.penalty_rate = instance.loan_type.penalty_rate
+
+@receiver(pre_save, sender=Loan)
+def update_account_no(sender, instance, **kwargs):
+    if instance.branch.loan_generate_string:
+        gen_string = instance.branch.loan_generate_string
+    if not instance.account_no:
+        last_obj = Loan.objects.last()
+        if last_obj:
+            if last_obj.account_no:
+                numb = last_obj.account_no.split("-", 1)[-1]
+                last_obj.account_no = int(numb)
+                new_string = str(int(last_obj.account_no) + 1)
+                instance.account_no = gen_string + '' + new_string
+        else:
+            instance.account_no = gen_string + '' + str(10000001)
+
+@receiver(pre_save, sender=Loan)
 def update_balance(sender, instance, **kwargs):
-    instance.remaining_balance = decimal.Decimal(instance.repayment_amount) - decimal.Decimal(instance.amount_paid)
-    if instance.remaining_balance == 0:
-        instance.status = "fully paid"
+    if instance.remaining_balance <= 0.00:
+        instance.remaining_balance = 0.00
+    elif instance.remaining_balance > 0:
+        instance.remaining_balance = decimal.Decimal(instance.repayment_amount) - decimal.Decimal(instance.amount_paid)
+    else:
+        pass
     instance.loan_score = instance.borrower.loan_score
 
- 
+@receiver(pre_save, sender=Loan)
+def update_status(sender, instance, **kwargs):
+    if instance.amount_paid >= 0.00 and instance.status != 'fully paid' and instance.disbursed == True and instance.maturity_date < today:
+        instance.status = "past maturity"
+    elif instance.amount_paid >= 0.00 and instance.status != "fully paid" and instance.disbursed == True and instance.maturity_date < today:
+        instance.status = "missed repayment"
+    elif instance.amount_paid >= 0.00 and instance.status != "fully paid" and instance.disbursed == True and instance.maturity_date == today:
+        instance.status = "due today"
+    elif instance.amount_paid == 0.00 and instance.status != "fully paid" and instance.disbursed == True and instance.maturity_date < today:
+        instance.status = 'arrears'
+    elif instance.amount_paid > 0.00 and instance.remaining_balance != instance.repayment_amount and instance.remaining_balance == 0 and instance.disbursed == True:
+        instance.status = 'fully paid'
+    elif instance.amount_paid >= 0.00 and instance.status != 'fully paid' and instance.disbursed == True and instance.maturity_date > today:
+        instance.status = 'current'
+
+#@receiver(pre_save, sender=Loan)
+#def update_interest_rate(sender, instance, **kwargs):
+#    if instance.interest_rate == None:
+#        instance.interest_rate = instance.loan_type.interest_rate
+#    if instance.penalty_rate == None:
+#        instance.penalty_rate = instance.loan_type.penalty_rate
+
+#@receiver(pre_save, sender=Loan)
+#def update_balance(sender, instance, **kwargs):
+#    instance.remaining_balance = decimal.Decimal(instance.repayment_amount) - decimal.Decimal(instance.amount_paid)
+#    if instance.remaining_balance == 0:
+#        instance.status = "fully paid"
+#    instance.loan_score = instance.borrower.loan_score
+
+  
 
 
 class LoanOfficer(models.Model):
@@ -304,6 +369,11 @@ class LoanRepayment(models.Model):
     repayment_mode = models.CharField(choices=repayment_mode_choices,
                             max_length=400, blank=True, null=True)
     amount = models.DecimalField(max_digits=60, decimal_places=2)
+    interest_paid = models.DecimalField(max_digits=60, decimal_places=2, blank=True, null=True)
+    interest = interest = models.DecimalField(max_digits=60, decimal_places=2, blank=True, null=True)
+    duration = models.CharField(max_length=222, blank=True, null=True)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    amount_taken = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     date = models.DateField()
     payment_type = models.CharField(
         max_length=128, blank=True, null=True, choices=payment_type_choices)
@@ -333,8 +403,8 @@ class LoanRepayment(models.Model):
         return str(self.loan.id) + "-" + str(self.date) + "-" + self.loan.borrower.first_name + " " + self.loan.borrower.last_name
 
 @receiver(pre_save, sender=LoanRepayment)
-def update_loan_repayment_branch(sender, instance, **kwargs):
-    instance.branch = instance.loan.branch   
+def update_borrower(sender, instance, **kwargs):
+    instance.borrower = instance.loan.borrower   
 
 class LoanDisbursement(models.Model):
     status_types = (
@@ -539,6 +609,9 @@ class LoanScheduler(models.Model):
     principal_due = models.FloatField(max_length=30, default=0)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     status = models.CharField(max_length=30, choices=loan_scheduler_choices)
+    principal_paid = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    def __str__(self):
+        return self.loan.account_no
 
 
 class LoanGuarantor(models.Model):
@@ -588,3 +661,11 @@ class GuarantorFile(models.Model):
     guarantor = models.ForeignKey(LoanGuarantor, on_delete=models.CASCADE)
     file = models.FileField(upload_to='guarantor_files')
 
+class OfficerLoan(models.Model):
+    loan = models.OneToOneField(Loan, on_delete=models.CASCADE, default=None)
+    loan_officer = models.ForeignKey(LoanOfficer, on_delete=models.CASCADE, default=None)
+    assigned_on = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return self.loan.account_no + ' to ' + str(self.loan_officer.staff_id.user_id.user.first_name) \
+        + ' ' + str(self.loan_officer.staff_id.user_id.user.last_name)

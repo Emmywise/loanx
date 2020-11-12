@@ -39,7 +39,7 @@ from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
     PrincipalOutstandingLoan, TotalOpenLoans, 
     InterestOutstandingLoan, FullyPaidLoans,
-    LoanRepaymentViewSet, LoanCollateralViewSet,
+    LoanRepaymentViewSet, LoanCollateralViewSet, ApproveLoanRepaymentViewSet,
     LoanGuarantorViewSet, GuarantorFileViewSet, LoanTypeViewSet,
     RunBvnCheck, GetAccountName, GetLoanScore,LoanDisbursementViewSet,
     LoanOfficerList, LoanOfficerDetail,FeesOutstandingLoan,
@@ -98,6 +98,7 @@ router.register('transfer-cash', TransferCashViewSet, 'transfer-cash')
 router.register('transfer-funds', FundTransferLogViewSet, 'transfer-funds')
 router.register('savings-fee', SavingsFeeViewSet, 'savings-fee')
 
+router.register('approve-or-decline-repayment', ApproveLoanRepaymentViewSet, 'approve-or-decline-repayment')
 router.register('asset-type', AssetTypeViewSet, 'asset-type')
 router.register('asset', AssetViewSet, 'asset')
 router.register('asset-document', AssetDocumentViewSet, 'asset-document')
