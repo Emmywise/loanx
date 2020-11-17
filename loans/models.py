@@ -11,6 +11,7 @@ from django.dispatch import receiver
 from accounts.models import Profile, Branch, Country
 from cloudinary.models import CloudinaryField
 from staffs.models import Staff
+today = datetime.date.today()
 # Create your models here.
 
 
@@ -50,6 +51,9 @@ class LoanType(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
 
 
 class Loan(models.Model):
@@ -138,6 +142,7 @@ class Loan(models.Model):
         ('charge fee based on the first repayment', 'charge fee based on the first repayment'),
         ('charge fee based on the last repayment', 'charge fee based on the last repayment'),
     )
+    last_paid_date = models.DateField(auto_now_add=False, blank=True, null=True)
     bank = models.CharField(verbose_name='Bank Name', max_length=100, blank=False, default='')
     amount_to_borrower = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
     account_name = models.CharField(verbose_name='Account Name', max_length=100, blank=False, default='')
@@ -168,10 +173,6 @@ class Loan(models.Model):
     interest_start_date = models.DateField(blank=True, null=True)
     loan_guarantor = models.ManyToManyField('LoanGuarantor', default='', related_name='loan_guarantor', blank=True)
     loan_collateral = models.ForeignKey('LoanCollateral', on_delete=models.DO_NOTHING, null=True, default='')
-
-
-
-
     maturity_date = models.DateField(blank=True, null=True)
     repayment_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=100, decimal_places=2, default=0)
@@ -203,6 +204,15 @@ class Loan(models.Model):
     disbursed_by = models.CharField(max_length=50, choices=disbursed_choices, blank=False, default='Online Transfer')
     loan_description = models.TextField(default='', blank=True)
     account_number = models.CharField(verbose_name='Account Number', max_length=20, blank=False, default='')
+    staff_permission_approved = models.BooleanField(default=False)
+    staff_permission_disbursed = models.BooleanField(default=False)
+    staff_permission_accepted = models.BooleanField(default=False)
+    approval_level = models.IntegerField(default=0)
+    first_approval = models.ForeignKey(to='staffs.Staff', on_delete=models.SET_NULL, null=True, related_name='first_approval')
+    second_approval = models.ForeignKey(to='staffs.Staff', on_delete=models.SET_NULL, null=True, related_name='second_approval')
+    third_approval = models.ForeignKey(to='staffs.Staff', on_delete=models.SET_NULL, null=True, related_name='third_approval')
+    amount_paid =  models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True, default=0)
+
     def __str__(self):
         return self.account_no + ' - ' + str(self.borrower.first_name) + '  ' + str(self.borrower.last_name)
 
@@ -318,6 +328,18 @@ class LoanMembership(models.Model):
     def __str__(self):
         return self.loan.borrower.first_name + " " + "in" + " "+ self.loan_officer.name
 
+
+class LoanApproval(models.Model):
+    staff = models.ForeignKey(to='staffs.Staff', on_delete=models.SET_NULL, null=True)
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, default=None)
+    decision = models.CharField(max_length=100, default='', blank=True)
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return self.loan.account_no
+
+
+
 class LoanRepayment(models.Model):
     time_to_post = (
         ("12:00am-3:59am", "12:00am-3:59am"),
@@ -398,6 +420,13 @@ class LoanRepayment(models.Model):
     days_passed = models.PositiveIntegerField(default=0, blank=True, null=True)
     pending_due = models.CharField(max_length=400, blank=True, null=True)
     comment = models.CharField(max_length=400, blank=True, null=True)
+    outstanding_principal = models.CharField(max_length=400, blank=True, null=True)
+    amount_paid = models.CharField(max_length=400, blank=True, null=True)
+    left_to_be_paid = models.CharField(max_length=400, blank=True, null=True)
+    leftToBePaidTotal = models.CharField(max_length=400, blank=True, null=True)
+    next_due_date = models.DateField(auto_now_add=False, null=True)
+    past_due_date = models.DateField(auto_now_add=False, null=True)
+    borrower = models.ForeignKey('borrowers.Borrower', on_delete=models.SET_NULL, null=True, default=None)
 
     def __str__(self):
         return str(self.loan.id) + "-" + str(self.date) + "-" + self.loan.borrower.first_name + " " + self.loan.borrower.last_name
@@ -598,15 +627,15 @@ class LoanScheduler(models.Model):
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING)
     description = models.CharField(max_length=30, blank=True, null=True)
     date = models.DateField()
-    principal = models.FloatField(max_length=30, default=0)
-    interest = models.FloatField(max_length=30, default=0)
-    fees = models.FloatField(max_length=30, default=0)
-    penalty = models.FloatField(max_length=30, default=0)
-    due = models.FloatField(max_length=30, default=0)
-    paid = models.FloatField(max_length=30, default=0)
-    pending_due = models.FloatField(max_length=30, default=0)
-    total_due = models.FloatField(max_length=30, default=0)
-    principal_due = models.FloatField(max_length=30, default=0)
+    principal =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    interest =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    fees =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    penalty =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    due =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    paid =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    pending_due =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    total_due =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
+    principal_due =  models.DecimalField(max_digits=100, decimal_places=2, default = 0)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     status = models.CharField(max_length=30, choices=loan_scheduler_choices)
     principal_paid = models.DecimalField(max_digits=100, decimal_places=2, default=0)
