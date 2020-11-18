@@ -15,9 +15,11 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions
 from .serializers import (
     UserSerializer, CountrySerializer, BranchSerializer,
+    BranchSerializer2, UserSuspendSerializer,
     BranchHolidaySerializer, BranchAdminSerializer,
-    UserProfileSerializer
+    UserProfileSerializer, SuspendAccountSerializer 
 )
+from staffs.models import Staff
 from loan_management_system import permissions as perms
 
 
@@ -58,6 +60,12 @@ def send_activation_token(user, profile):
 class UserAccounts(viewsets.ViewSet):
 
     def create(self, request):
+        check_branch = Branch.objects.filter(id=request.data['branch']).exists()
+        if check_branch:
+            get_branch = Branch.objects.get(id=request.data['branch'])
+        if get_branch.is_open == False:
+            return Response({"Error": "Selected Branch is not open or closed. Choose an opened Branch or open a Branch for this user."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserSerializer(data=request.data)
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -151,6 +159,35 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(profile__is_super_admin=True)
 
         return queryset
+
+class UserSuspension(viewsets.ViewSet):
+
+    def partial_update(self, request, pk=None):
+        serializer = UserSuspendSerializer(data=request.data, partial=True)
+        try:
+            user = Profile.objects.get(pk=pk)
+            if serializer.is_valid():
+                serializer.update(user, serializer.validated_data)
+                if serializer.validated_data['suspend'] == True:
+                    SuspendedAccount.objects.get_or_create(profile=user)
+                else:
+                    SuspendedAccount.objects.filter(profile=user).update(status=False)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist as err:
+            print(err)
+            return Response({"message": "user does not exist"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+class SuspendAccountView(APIView):
+
+    def get(self, request, pk=None):
+        get_suspended_account = SuspendedAccount.objects.all()
+        serializer = SuspendAccountSerializer(get_suspended_account, many=True)
+        return Response(serializer.data)
+
+
+
 
 
 class ChangePassword(APIView):
@@ -320,4 +357,10 @@ class ResetPassword(APIView):
 
 
 def jwt_response_payload_handler(token, user=None, request=None):
-    return dict(token=token, userid=user.id)
+    profile = Profile.objects.get(user=user)
+    if profile.user_type == 'staff':
+        staff = Staff.objects.get(user_id=profile.id)
+        staff_name = staff.user_id.user.first_name + ' ' + staff.user_id.user.last_name
+        return dict(token=token, userid=user.id, staff_id=staff.id, staff_name=staff_name)
+    else:
+        return dict(token=token, userid=user.id)

@@ -1,6 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_save, post_save
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import (
+    AbstractBaseUser, BaseUserManager, PermissionsMixin
+)
+from django.utils import timezone
 from django.dispatch import receiver
 import random
 import decimal
@@ -8,6 +13,7 @@ from decimal import Decimal
 import string
 from datetime import timedelta
 import datetime
+import os
 
 # Create your models here.
 
@@ -72,6 +78,7 @@ def update_is_open(sender, instance, **kwargs):
 
 
 
+
 class BranchHoliday(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     date = models.DateField()
@@ -98,6 +105,7 @@ class Profile(models.Model):
     active = models.BooleanField(default=False)
     branch = models.ForeignKey(Branch, on_delete=models.DO_NOTHING)
     user_type = models.CharField(max_length=20, choices=user_type_choices)
+    suspend = models.BooleanField(default=False)
     # user_role
     is_super_admin = models.BooleanField(default=False)
     activation_token = models.CharField(max_length=100, blank=True, null=True)
@@ -105,6 +113,14 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+class SuspendedAccount(models.Model):
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    status = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.profile.user.first_name + ' ' + str(self.profile.user.last_name)
 
 
 class AccountResetLink(models.Model):

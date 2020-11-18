@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Profile, Branch, BranchAdmin, BranchHoliday, Country
+from .models import Profile, Branch, BranchAdmin, BranchHoliday, SuspendedAccount, Country
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -11,11 +11,35 @@ class CountrySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class BranchSerializer(serializers.ModelSerializer):
+class BranchSerializer2(serializers.ModelSerializer):
 
     class Meta:
         model = Branch
         fields = '__all__'
+
+
+class BranchSerializer(serializers.ModelSerializer):
+    country = serializers.SerializerMethodField()
+    open_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Branch
+        fields = '__all__'
+
+    def get_country(self, obj):
+        name = obj.country.name + ' - ' + str(obj.country.capital)
+        return name
+        
+    def get_open_date(self, obj):
+        if obj.date_format == 'dd/mm/yyyy':
+            date_is = obj.open_date.strftime('%d-%m-%Y')
+            return date_is
+        elif obj.date_format == 'mm/dd/yyyy':
+            date_is = obj.open_date.strftime('%m-%d-%Y')
+            return date_is
+        else:
+            date_is = obj.open_date.strftime('%Y-%m-%d')
+            return date_is
 
 
 class BranchHolidaySerializer(serializers.ModelSerializer):
@@ -141,6 +165,7 @@ class UserSerializer(serializers.Serializer):
         instance.profile.user_type = validated_data.get('user_type', instance.profile.user_type)
         instance.profile.is_super_admin = validated_data.get('is_super_admin', instance.profile.is_super_admin)
         instance.profile.phone = validated_data.get('phone', instance.profile.phone)
+        instance.profile.suspend = validated_data.get('suspend', instance.profile.suspend)
         try:
             if validated_data['password']:
                 instance.set_password(validated_data['password'])
@@ -153,15 +178,22 @@ class UserSerializer(serializers.Serializer):
     def get_id(self, validated_data):
         return validated_data['id']
 
+class UserSuspendSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ['suspend']
+        model = Profile
+
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     phone = serializers.SerializerMethodField()
     active = serializers.SerializerMethodField()
+    suspend = serializers.SerializerMethodField()
     branch_name = serializers.SerializerMethodField()
     branch_currency = serializers.SerializerMethodField()
     branch_mobile = serializers.SerializerMethodField()
     is_super_admin = serializers.SerializerMethodField()
-
+    user_type = serializers.SerializerMethodField()
     class Meta:
         fields = '__all__'
         model = User
@@ -171,6 +203,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_active(self, obj):
         return obj.profile.active
+
+    def get_suspend(self, obj):
+        return obj.profile.suspend
 
     def get_branch_name(self, obj):
         return obj.profile.branch.name
@@ -183,3 +218,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_is_super_admin(self, obj):
         return obj.profile.is_super_admin
+
+class SuspendAccountSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
+    class Meta:
+        fields = '__all__'
+        model = SuspendedAccount
+
+    def get_profile(self, obj):
+        name = obj.profile.user.first_name + ' ' + str(obj.profile.user.last_name)
+        return name
+

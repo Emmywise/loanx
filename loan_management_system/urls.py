@@ -132,7 +132,7 @@ urlpatterns = [
     path('api/send-reset-password/', SendResetPassword.as_view()),
     path('api/confirm-reset-token/', ConfirmResetToken.as_view()),
     path('api/reset-password/', ResetPassword.as_view()),
-    path('notifications/', include('notifications.urls')) ,
+    path('notifications/', include('notifications.urls')),
     path('borrowers/', include('borrowers.urls')) ,
     path('loans/', LoanView.as_view()) ,
     path('api/get_account_name/', GetAccountName.as_view()),
