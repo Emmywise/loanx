@@ -1,6 +1,7 @@
 from django.conf.urls import url
 from . import views
-
+from django.urls import path, include
+from .views import BorrowerFileList, BorrowerFileDetail
 
 urlpatterns = [
     url(
@@ -37,5 +38,11 @@ urlpatterns = [
         r'^api/invite/$',
         views.get_post_invite_borrower,
         name='get_post_invite_borrower'
+    ),
+    path('api/attachments/',
+        BorrowerFileList.as_view()
+    ),
+    path('api/attachments/<int:pk>/',
+        BorrowerFileDetail.as_view()
     )
 ]

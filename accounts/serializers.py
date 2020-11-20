@@ -213,6 +213,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_branch_currency(self, obj):
         return obj.profile.branch.currency
 
+    def get_user_type(self, obj):
+        return obj.profile.user_type
+
+
     def get_branch_mobile(self, obj):
         return obj.profile.branch.mobile
 

@@ -7,12 +7,17 @@ from rest_framework.parsers import MultiPartParser, JSONParser, FileUploadParser
 from rest_framework import status
 from rest_framework.views import APIView
 from .models import *
+import requests
 from loans.models import Loan, LoanRepayment
 from loans.serializers import LoanSerializer, LoanRepaymentSerializer
 from .serializers import *
 from savings_investments.models import SavingsAccount
 from savings_investments.serializers import SavingsAccountSerializer
 import cloudinary.uploader
+from loan_management_system import permissions as perms
+from rest_framework.viewsets import ModelViewSet
+from rest_framework import viewsets
+
 
 @api_view(['GET', 'DELETE', 'PATCH'])
 def get_delete_update_borrower(request, pk):

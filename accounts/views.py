@@ -8,7 +8,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.exceptions import ObjectDoesNotExist
 from .models import (
     Profile, Country, Branch, BranchHoliday, BranchAdmin,
-    AccountResetLink
+    AccountResetLink, SuspendedAccount
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response

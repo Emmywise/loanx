@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
+import cloudinary.uploader
+from rest_framework.response import Response
 from .models import (
     Investor, InvestorDocuments, InvestorInvitation,
-    LoanInvestmentProduct, LoanInvestment,
+    LoanInvestmentProduct, LoanInvestment, InvestorInvite,
     InvestorProduct, InvestorAccount,
     InvestorTransaction
 )
@@ -37,6 +39,29 @@ class InvestorDocumentsViewSet(ModelViewSet):
 
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        if request.data['file'] != '':
+            upload_data = cloudinary.uploader.upload(request.data['file'], resource_type="auto")
+            request.data['file'] = upload_data['secure_url']
+        serializer = InvestorDocumentsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # instance = self.perform_create(serializer)
+
+        serializer.save()
+        obj = serializer.save()
+
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None):
+        instance = self.get_object()
+        if request.data['file'] != '':
+            upload_data = cloudinary.uploader.upload(request.data['file'], resource_type="auto")
+            request.data['file'] = upload_data['secure_url']
+        serializer = InvestorDocumentsSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class InvestorInvitationViewSet(ModelViewSet):
     serializer_class = InvestorInvitationSerializer

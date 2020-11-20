@@ -24,7 +24,7 @@ from staffs.models import Payroll
 from loans.models import Loan, LoanScheduler, LoanOfficer, LoanDisbursement, LoanFee, LoanRepayment
 from borrowers.models import Borrower
 from accounts.models import Branch
-
+from decimal import Decimal
 # Create your views here.
 
 
@@ -256,10 +256,10 @@ class LoanReport(APIView):
                 payments_interest += each_loan_schedule.interest
                 payments_fees += each_loan_schedule.fees
                 payments_penalty += each_loan_schedule.penalty
-            payments_principal = amount_paid - payments_interest - payments_fees - payments_penalty
+            payments_principal = Decimal(amount_paid) - payments_interest - payments_fees - payments_penalty
             if payments_principal < 0:
                 payments_principal = 0 
-            principal_at_risk = principal_released - payments_principal 
+            principal_at_risk = Decimal(principal_released) - payments_principal 
             due_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today())
             principal_due_loan = 0
             interest_due_loan = 0
@@ -313,10 +313,10 @@ class BorrowersReport(APIView):
                 payments_interest += each_loan_schedule.interest
                 payments_fees += each_loan_schedule.fees
                 payments_penalty += each_loan_schedule.penalty
-            payments_principal = amount_paid - payments_interest - payments_fees - payments_penalty
+            payments_principal = Decimal(amount_paid) - payments_interest - payments_fees - payments_penalty
             if payments_principal < 0:
                 payments_principal = 0 
-            principal_at_risk = principal_released - payments_principal 
+            principal_at_risk = Decimal(principal_released) - payments_principal 
             due_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today())
             principal_due_loan = 0
             interest_due_loan = 0
@@ -539,10 +539,10 @@ class LoanProductReport(APIView):
                 payments_interest += each_loan_schedule.interest
                 payments_fees += each_loan_schedule.fees
                 payments_penalty += each_loan_schedule.penalty
-            payments_principal = amount_paid - payments_interest - payments_fees - payments_penalty
+            payments_principal = Decimal(amount_paid) - payments_interest - payments_fees - payments_penalty
             if payments_principal < 0:
                 payments_principal = 0 
-            principal_at_risk = principal_released - payments_principal 
+            principal_at_risk = Decimal(principal_released) - payments_principal 
             due_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today())
             principal_due_loan = 0
             interest_due_loan = 0

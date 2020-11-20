@@ -19,8 +19,8 @@ from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token
 from rest_framework.routers import DefaultRouter
 from accounting.views import CashFlowAccumlated, CashFlowMonthly
 from accounts.views import (
-    UserAccounts, CountryViewSet, BranchViewSet,
-    BranchHolidayViewSet, BranchAdminViewSet,
+    UserAccounts, CountryViewSet, BranchViewSet,SuspendAccountView,
+    BranchHolidayViewSet, BranchAdminViewSet,UserSuspension,
     UserProfileViewSet, ResendActivationToken,
     ActivateAccount, ChangePassword,
     SendResetPassword, ConfirmResetToken,
@@ -70,6 +70,8 @@ from investors.views import (
 
 router = DefaultRouter()
 
+
+router.register('suspend-user', UserSuspension, 'suspend-user')
 router.register('accounts', UserAccounts, 'accounts')
 router.register('country', CountryViewSet, 'country')
 router.register('branch', BranchViewSet, 'branch')
@@ -133,6 +135,8 @@ urlpatterns = [
     path('api/confirm-reset-token/', ConfirmResetToken.as_view()),
     path('api/reset-password/', ResetPassword.as_view()),
     path('notifications/', include('notifications.urls')),
+    path('api/suspended/', SuspendAccountView.as_view()) ,
+    path('api/suspended/<int:pk>/', SuspendAccountView.as_view()) ,
     path('borrowers/', include('borrowers.urls')) ,
     path('loans/', LoanView.as_view()) ,
     path('api/get_account_name/', GetAccountName.as_view()),

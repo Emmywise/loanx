@@ -3,6 +3,7 @@ from accounts.models import Profile, Branch
 from loans.models import Loan
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
+from cloudinary.models import CloudinaryField
 
 # Create your models here.
 
@@ -27,6 +28,7 @@ class Investor(models.Model):
         ('Pensioner', 'Pensioner'),
         ('Unemployed', 'Unemployed'),
     )
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, default='')
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -62,7 +64,8 @@ def update_investor_id(sender, instance, **kwargs):
 
 class InvestorDocuments(models.Model):
     investor = models.ForeignKey(Investor, on_delete=models.CASCADE)
-    file = models.FileField(upload_to='investor_documents')
+    #file = models.FileField(upload_to='investor_documents')
+    file = CloudinaryField('raw', null=True, blank=True)
 
 
 class InvestorInvitation(models.Model):
@@ -70,6 +73,12 @@ class InvestorInvitation(models.Model):
     blank=True, null=True)
     accepted = models.BooleanField(default=False)
 
+class InvestorInvite(models.Model):
+    email_address = models.CharField(max_length=255, default='', blank=False)
+    sent = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.email_address
 
 class LoanInvestmentProduct(models.Model):
     interest_posting_frequency_choices = (

@@ -13,6 +13,22 @@ class AssetTypeSerializer(serializers.ModelSerializer):
 
 
 class AssetSerializer(serializers.ModelSerializer):
+    branch = serializers.SerializerMethodField()
+    asset_type = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = '__all__'
+        model = Asset
+
+    def get_branch(self, obj):
+        name = obj.branch.name
+        return name
+
+    def get_asset_type(self, obj):
+        name = obj.asset_type.name
+        return name
+
+class AssetSerializer2(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Asset

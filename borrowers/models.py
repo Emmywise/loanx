@@ -14,6 +14,11 @@ import string
 # Create your models here.
 
 
+#def random_ref_generator(size=20, chars=string.ascii_letters + string.digits):
+#    return ''.join(random.choice(chars) for _ in range(size))
+
+#ref_gen = random_ref_generator()
+
 class Borrower(models.Model):
     gender_choices = (
         ('Male', 'Male'),
@@ -74,12 +79,14 @@ class Borrower(models.Model):
     borrower_photo = CloudinaryField('image',null=True, blank=True)
     description = models.CharField(
         max_length=400)
+    authorization_code = models.CharField(max_length=125, blank=True, null=True)
     is_activated = models.BooleanField(default=False)
     loan_score = models.PositiveIntegerField(blank=True, null=True)
     loan_officer = models.ForeignKey(LoanOfficer, on_delete=models.SET_NULL, verbose_name='Loan Officer', null=True)
 
     def __str__(self):
         return self.first_name + " " + self.last_name
+
 @receiver(pre_save, sender=Borrower)
 def update_borrower_uid(sender, instance, **kwargs):
     mobile = instance.mobile
@@ -114,4 +121,7 @@ class Membership(models.Model):
 
 
 class InviteBorrower(models.Model):
-    email_address = models.CharField(max_length=255)
+    email_address = models.CharField(max_length=255, default='', blank=False)
+
+    def __str__(self):
+        return self.email_address
