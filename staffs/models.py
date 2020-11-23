@@ -7,6 +7,11 @@ from django.dispatch import receiver
 
 
 class Payroll(models.Model):
+    PAYMENT_METHOD_CHOICE = (
+        ('Cash', 'Cash'),
+        ('Cheque', 'Cheque'),
+        ('Bank Transfer', 'Bank Transfer'),
+    )
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     staff = models.ForeignKey(Profile, on_delete=models.CASCADE)
     basic_pay = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
@@ -24,14 +29,14 @@ class Payroll(models.Model):
     salary_loan = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     total_deduction = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     net_pay = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
-    payment_method = models.CharField(max_length=100, blank=True, null=True)
+    payment_method = models.CharField(max_length=100, choices=PAYMENT_METHOD_CHOICE, blank=True, null=True)
     is_recurring = models.BooleanField(default=False)
     recurring_date = models.CharField(max_length=125, blank=True, null=True)
     send_slip_to_staff_email = models.BooleanField(default=False)
     pay_date = models.DateField()
 
     def __str__(self):
-        return self.staff.user.username
+        return self.staff.user_id.user.first_name + ' ' + str(self.staff.user_id.user.last_name)
 
 
 @receiver(pre_save, sender=Payroll)
