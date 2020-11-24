@@ -187,3 +187,5 @@ def get_loan_score(phone_no, ref, firstname, surname, email, amount):
         resp['score'] = "An error occured"
 
     return resp
+
+

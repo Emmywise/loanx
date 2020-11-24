@@ -137,6 +137,7 @@ def sum_cash_source_balance(sender, instance, **kwargs):
 
 
 class Teller(models.Model):
+    teller_no = models.CharField(max_length=100, blank=True, default='')
     cash_safe_management = models.ForeignKey(CashSafeManagement, on_delete=models.CASCADE)
     staff = models.OneToOneField(Profile, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)

@@ -16,9 +16,9 @@ class SMS(models.Model):
     )
     date_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        choices=status_choices, max_length=100)
+        choices=status_choices, max_length=100, blank=True)
     message_purpose = models.CharField(
-        choices=message_purpose_choices, max_length=100)
+        choices=message_purpose_choices, max_length=100, blank=True)
 
 
 # def send_msg():

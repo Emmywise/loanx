@@ -74,7 +74,7 @@ ROOT_URLCONF = 'loan_management_system.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'),],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -174,14 +174,17 @@ JWT_AUTH = {
 PAYSTACK_SECRET = 'sk_test_40842031d9cd521f662260d98a0248ed8c569d73'
 
 
-EMAIL_HOST = 'smtp.mailtrap.io'
-EMAIL_HOST_USER = 'a57749b03c3567'
-EMAIL_HOST_PASSWORD = '67fb1ed70579d6'
-EMAIL_PORT = '2525'
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.mailtrap.io'
+# EMAIL_HOST_USER = 'a57749b03c3567'
+# EMAIL_HOST_PASSWORD = '67fb1ed70579d6'
+#EMAIL_PORT = '2525'
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 CELERY_BROKER_URL = 'redis://localhost'
 #CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+
+EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, "inbox")
 
 CELERY_TIMEZONE = 'Asia/Kolkata'
 
