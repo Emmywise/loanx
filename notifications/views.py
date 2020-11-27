@@ -63,12 +63,49 @@ class SendSMS(APIView):
 
 
 class SendEmail(APIView):
-	def send_mail(self, purpose, sender, recepient):
-		try:
-			pass
-		except:
-			pass
-	#         subject, from_email, to = purpose, \
+	def post(self, request):
+		url = 'https://comms.tcore.online/api/v1/generic/sendmail/mail'
+		recepient = request.data.get('recepient')
+		sender = request.data.get('sender')
+		subject = request.data.get('subject')
+		body = request.data.get('body')
+		sender = request.data.get('sender')
+		name = request.data.get('name')
+		email = request.data.get('emal')
+		datum = {
+			"subject" : subject,
+			"html_content" : body,
+			"to" : recepient,
+			"from" : {
+				'name': 'loanx',
+				'email': 'adefia.emmywise@gmail.com',
+			},
+		}
+
+		headers = {
+			'Content-Type' : 'application/json',
+			'Accept' : 'application/json'
+		}
+		datum = json.dumps(datum)
+		res = requests.post(url, data=datum, headers=headers)
+		data = {
+			'subject': subject,
+			'status': 'sent'
+		}
+
+		serializer = SendEmailSerializer(data=data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(res.json(), status=status.HTTP_200_OK)
+		else:
+			return Response({'error': 'Try again.'}, status=status.HTTP_400_BAD_REQUEST)
+
+	# def send_mail(self, purpose, sender, recepient):
+	# 	try:
+	# 		pass
+	# 	except:
+	# 		pass
+	# #        subject, from_email, to = purpose, \
 	#                                 sender, recepient
 	#         text_content = 'Hey please reset password'
 	#         html_content = '<p>Hey please reset password .' \

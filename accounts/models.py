@@ -48,7 +48,7 @@ class Branch(models.Model):
     address = models.CharField(max_length=400, blank=True, null=True)
     city = models.CharField(max_length=400, blank=True, null=True)
     landline = models.CharField(max_length=20, blank=True, null=True)
-    mobile = models.IntegerField(blank=True, null=True)
+    mobile = models.CharField(max_length=400, blank=True, null=True)
     min_loan_amount = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     max_loan_amount = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     min_loan_interest = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)

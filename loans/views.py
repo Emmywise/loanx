@@ -1402,11 +1402,11 @@ class ApproveOrDeclineLoan(APIView):
 					the_loan.remaining_balance = loan_repayment_amount
 					the_loan.repayment_amount = loan_repayment_amount
 					if total_approval_count == 1:
-						the_loan.approved = True
-						the_loan.approval_level = 3
+				#		the_loan.approved = True
+						the_loan.approval_level = 1
 						the_loan.third_approval = staff
-						the_loan.status = "approved"
-						the_loan.staff_permission_approved = True
+				#			the_loan.status = "approved"
+				#		the_loan.staff_permission_approved = True
 						the_loan.staff_permission_accepted = True
 					elif total_approval_count == 2:
 						the_loan.approval_level = 2
