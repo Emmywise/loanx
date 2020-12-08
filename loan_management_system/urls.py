@@ -33,7 +33,7 @@ from reports.views import (
     OtherIncomeViewSet, OtherIncomeTypeViewSet,ReportsBetween, LoanProductReport, DisbursementReport,\
     OutstandingReport, BorrowersReport, LoanReport, LoanOfficerReport, LoanArrearsAgingReport, \
         CollectorReportStaff, FeesReport, AtAGlanceReport,
-    MonthlyReport, AllEnteries
+    MonthlyReport, AllEnteries, PortfolioRisk, PortfolioRiskDays
 )
 from loans.views import (
     LoanView, LoanCommentList, LoanCommentDetail,
@@ -160,6 +160,8 @@ urlpatterns = [
     path('individual_repayments', IndividualRepayments),
     path('fees_outstanding', FeesOutstandingLoan.as_view()),   
     path('borrowers_savings/', BorrowersSavings),
+    path('api/portfolio_at_risk/', PortfolioRisk.as_view()),
+    path('api/portfolio_at_risk_days/', PortfolioRiskDays.as_view()),
     path('search_by_working_status/<str:status>',SearchByWorkingStatus),
     path('loan_by_officer/<int:pk>', LoansByOfficers.as_view()),
     #path('loan_fees/', LoanFeeViewSet.as_view()),

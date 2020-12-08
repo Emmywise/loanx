@@ -1,7 +1,9 @@
 from django.shortcuts import render
 import datetime
 import calendar
+import math
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from django.db.models import Q
 #from fine_search.fine_search import perform_search_queryset
@@ -421,31 +423,32 @@ class LoanOfficerReport(APIView):
                 "payments_penalty":payments_penalty,
                 "payments_total": payments_principal + payments_interest + payments_fees + payments_penalty
             }
-            root.append(data)
-        loan_officer = LoanOfficer.objects.all()
-        # print(loan_officer)
-        for each_loan_officer in loan_officer:
-            l_loans = []
-            each_members = each_loan_officer.members.all()
-            # print(each_loan_officer)
-            # print(each_members)
-            if len(each_members) == 0:
-                continue
-            print(each_members)
-            for e in each_members:
-                collection = []
-                l_loans.append(e.pk)
-            print(l_loans)
-            for each_l_loan in l_loans:
-                for each_root in root:
-                    if int(each_root["loan"]) == (each_l_loan):
-                        collection.append(each_root)
-            total_output.append({each_loan_officer.name: collection}) 
+            return Response (data, status = status.HTTP_200_OK)
+        #     root.append(data)
+        # loan_officer = LoanOfficer.objects.all()
+        # # print(loan_officer)
+        # for each_loan_officer in loan_officer:
+        #     l_loans = []
+        #     each_members = each_loan_officer.members.all()
+        #     # print(each_loan_officer)
+        #     # print(each_members)
+        #     if len(each_members) == 0:
+        #         continue
+        #     print(each_members)
+        #     for e in each_members:
+        #         collection = []
+        #         l_loans.append(e.pk)
+        #     print(l_loans)
+        #     for each_l_loan in l_loans:
+        #         for each_root in root:
+        #             if int(each_root["loan"]) == (each_l_loan):
+        #                 collection.append(each_root)
+        #     total_output.append({each_loan_officer.name: collection}) 
                     
                     
 
-        #print(root)
-        return Response(total_output, status = status.HTTP_200_OK) 
+        # #print(root)
+        # return Response(total_output, status = status.HTTP_200_OK) 
 
 
 
@@ -457,6 +460,61 @@ class ReportsBetween(APIView):
         serializer = LoanBorrowerReportSerializer(filtered_reports, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class PortfolioRisk(APIView):
+    def get(self, request, pk=None):
+        total_loans = Loan.objects.all().count()
+        defaulted_loans_thirty = Loan.objects.all().filter(maturity_date__lt = datetime.date.today() - timedelta(days=28)).filter(amount_paid__lte = 0).exclude(status="fully paid").filter(disbursed=True)
+        defaulted_loans_sixty = Loan.objects.all().filter(maturity_date__lt = datetime.date.today() - timedelta(days=48)).filter(amount_paid__lte = 0).exclude(status="fully paid").filter(disbursed=True)
+        defaulted_loans_ninety = Loan.objects.all().filter(maturity_date__lt = datetime.date.today() - timedelta(days=90)).filter(amount_paid__lte = 0).exclude(status="fully paid").filter(disbursed=True)
+        thirty = 0
+        sixty = 0
+        ninety = 0
+        if defaulted_loans_thirty:
+            thirty += defaulted_loans_thirty.count()
+            thirty = (thirty/total_loans)*100
+        else:
+            thirty = 0
+        if defaulted_loans_sixty:
+            sixty += defaulted_loans_sixty.count()
+            sixty = (sixty/total_loans)*100
+        else:
+            sixty = 0
+        if defaulted_loans_ninety:
+            ninety += defaulted_loans_ninety.count()
+            ninety = (ninety/total_loans)*100
+        else:
+            ninety = 0
+
+        data = {
+            'PAR_30': math.ceil(thirty),
+            'PAR_60': math.ceil(sixty),
+            'PAR_90': math.ceil(ninety),
+        }
+
+        return Response({"results": data})
+
+
+class PortfolioRiskDays(APIView):
+    def get(self, request):
+        day = request.GET.get('day')
+        if day=='' or not day:
+            return Response({'invalid': 'invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+        day = int(day)
+        total_loans = Loan.objects.all().count()
+        defaulted_loans_day = Loan.objects.all().filter(maturity_date__lt = datetime.date.today() - timedelta(days=day)).filter(amount_paid__lte = 0).exclude(status="fully paid").filter(disbursed=True)
+        days = 0
+        if defaulted_loans_day:
+            days += defaulted_loans_day.count()
+            days = (days/total_loans)*100
+        else:
+            days = 0
+
+        data = {
+            'PAR_DURATION': math.ceil(days)
+        }
+
+        return Response({"results": data})
 
 
 class LoanArrearsAgingReport(APIView):
@@ -939,30 +997,30 @@ class CollectorReportStaff(APIView):
         total_payments_penalty += root_payments_penalty
         loan_officer = LoanOfficer.objects.all()
         # print(loan_officer)
-        for each_loan_officer in loan_officer:
-            l_loans = []
-            each_members = each_loan_officer.members.all()
-            # print(each_loan_officer)
-            # print(each_members)
-            if len(each_members) == 0:
-                continue
-            print(each_members)
-            for e in each_members:
-                collection = []
-                l_loans.append(e.pk)
-            print(l_loans)
-            for each_l_loan in l_loans:
-                for each_root in root:
-                    if int(each_root["loan"]) == (each_l_loan):
-                        collection.append(each_root)
-            total_output.append(({each_loan_officer.name: collection}, {"System Generated":{"total_principal":\
-            total_payments_principal,"total_interest": total_payments_interest,"total_fees": total_payments_fees,\
-            "total_penalty": total_payments_penalty, "total_collections": (total_payments_principal + total_payments_interest\
-                 + total_payments_fees + total_payments_penalty)}})) 
+        # for each_loan_officer in loan_officer:
+        #     l_loans = []
+        #     each_members = each_loan_officer.members.all()
+        #     # print(each_loan_officer)
+        #     # print(each_members)
+        #     if len(each_members) == 0:
+        #         continue
+        #     print(each_members)
+        #     for e in each_members:
+        #         collection = []
+        #         l_loans.append(e.pk)
+        #     print(l_loans)
+        #     for each_l_loan in l_loans:
+        #         for each_root in root:
+        #             if int(each_root["loan"]) == (each_l_loan):
+        #                 collection.append(each_root)
+        #     total_output.append(({each_loan_officer.name: collection}, {"System Generated":{"total_principal":\
+        #     total_payments_principal,"total_interest": total_payments_interest,"total_fees": total_payments_fees,\
+        #     "total_penalty": total_payments_penalty, "total_collections": (total_payments_principal + total_payments_interest\
+        #          + total_payments_fees + total_payments_penalty)}})) 
                     
                     
 
-        #print(root)
+        # #print(root)
         return Response(total_output, status = status.HTTP_200_OK) 
 
 
@@ -1180,47 +1238,113 @@ class AtAGlanceReport(APIView):
 class MonthlyReport(APIView):
     def get(self, request, pk=None):
         branch = request.GET.get("branch")
-        all_loan = Loan.objects.all()
-        number_of_repayments = LoanRepayment.objects.all()
-        number_of_fully_paid = Loan.objects.filter(status="fully paid")
-        new_loans = Loan.objects.filter(request_date__lte=datetime.datetime.now() - timedelta(days=30))
-        pending_due = 0
-        total_principal_received = 0
-        total_interest_received = 0
-        total_fees_received = 0
-        total_penalty_received = 0
-        total_amount_received = 0
-        for each_loan in all_loan:
-            total_received = each_loan.amount_paid
-            principal_received = each_loan.total_due_principal - each_loan.interest\
-                 - each_loan.loan_fees - each_loan.penalty_amount
-            interest_received = each_loan.total_due_interest - each_loan.interest
-            fees_received = each_loan.total_due_loan_fee - each_loan.loan_fees
-            penalty_received = each_loan.total_due_penalty - each_loan.penalty_amount
-            pending_due += each_loan.remaining_balance
-        total_amount_received += total_received
-        total_principal_received += principal_received
-        total_interest_received += interest_received
-        total_fees_received += fees_received
-        total_penalty_received += penalty_received
-        queried_branch = Branch.objects.get(pk=branch)
-        if total_interest_received < 0:
-            total_interest_received = 0
-        if total_principal_received < 0:
-            total_principal_received = 0
-        data = {
-            "principal_balance": queried_branch.capital,
-            "principal_received": total_principal_received,
-            "interest received": total_interest_received,
-            "fees received": total_fees_received,
-            "penalty received": total_penalty_received,
-            "total_received": total_amount_received,
-            "new loans": len(new_loans),
-            "number of repayments": len(number_of_repayments),
-            "pending due": pending_due,
-            "number of fully paid": len(number_of_fully_paid)
-        }        
-        return Response(data, status=status.HTTP_200_OK) 
+        check_branch = Loan.objects.filter(branch=branch).exists()
+        if check_branch == False:
+            return Response({'not_found': 'Branch does not exists'}, status=status.HTTP_404_NOT_FOUND)
+        jan, feb, mar, apr, may, jun, jul, aug, sept, octo, nov, dec = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+        today = datetime.datetime.today()
+        total_month = 12
+        current_month = datetime.datetime.now().month
+        datas = []
+        for i in range(current_month):
+            month = current_month - i
+            all_loan = Loan.objects.filter(branch=branch, request_date__lte=datetime.datetime.now() - relativedelta(months=month))
+            number_of_fully_paid = Loan.objects.filter(branch=branch, status="fully paid")
+            loans = Loan.objects.filter(branch=branch, request_date__lte=datetime.datetime.now() - relativedelta(months=month)).count()
+            new_loans = Loan.objects.filter(branch=branch, request_date__lte=datetime.datetime.now() - relativedelta(months=month))
+            pending_due = Loan.objects.filter(branch=branch, status= "current", request_date__lte=datetime.datetime.now() - relativedelta(months=month))
+            get_fully_paid = Loan.objects.filter(branch=branch, status="fully paid", loan_release_date__lt = datetime.date.today() - relativedelta(months=month))
+            get_fully_paid = get_fully_paid.count()
+            new_loans = new_loans.count()
+            pending_due = pending_due.count()
+            monthinteger = month
+            year = datetime.datetime.now().year
+            d_month = datetime.date(year, monthinteger, 1).strftime('%B')
+
+            repayment = 0
+            penalty = 0
+            fees = 0
+            interest = 0
+            principal_received = 0
+            principal_balance = 0
+            for loan in all_loan:
+                number_of_repayments = LoanRepayment.objects.filter(loan=loan, date__lte=datetime.datetime.now() - relativedelta(months=month))
+                loan_schedule = LoanScheduler.objects.filter(loan=loan, date__lte=datetime.datetime.now() - relativedelta(months=month))
+                loan_schedule1 = LoanScheduler.objects.filter(loan=loan, paid__gt=0, status="settled", date__lte=datetime.datetime.now() - relativedelta(months=month))
+                principal_received += loan.amount_paid
+                for sch1 in loan_schedule1:
+                    interest += sch1.interest
+                for sch in loan_schedule:
+                    penalty += sch.penalty
+                    fees += sch.fees
+                repayment += number_of_repayments.count()
+                principal_balance = loan.branch.remaining_capital
+            total_received = principal_received + fees + interest + penalty
+
+            data = {
+                'fully_paid_loans': get_fully_paid,
+                'number_of_repayments': repayment,
+                'new_loans': new_loans,
+                'penalty_received':penalty,
+                'principal_balance': principal_balance,
+                'principal_received': principal_received,
+                'fees_received': fees,
+                'interest_received': interest,
+                'pending_due': pending_due,
+                'total_received': total_received,
+                'month_of': d_month
+
+            }
+            datas.append(data)
+
+        
+        return Response({"monthly_reports": datas}, status=status.HTTP_200_OK) 
+
+
+# class MonthlyReport(APIView):
+#     def get(self, request, pk=None):
+#         branch = request.GET.get("branch")
+#         all_loan = Loan.objects.all()
+#         number_of_repayments = LoanRepayment.objects.all()
+#         number_of_fully_paid = Loan.objects.filter(status="fully paid")
+#         new_loans = Loan.objects.filter(request_date__lte=datetime.datetime.now() - timedelta(days=30))
+#         pending_due = 0
+#         total_principal_received = 0
+#         total_interest_received = 0
+#         total_fees_received = 0
+#         total_penalty_received = 0
+#         total_amount_received = 0
+#         for each_loan in all_loan:
+#             total_received = each_loan.amount_paid
+#             principal_received = (each_loan.total_due_principal - each_loan.interest)\
+#                  - each_loan.loan_fees - each_loan.penalty_amount
+#             interest_received = each_loan.total_due_interest - each_loan.interest
+#             fees_received = each_loan.total_due_loan_fee - each_loan.loan_fees
+#             penalty_received = each_loan.total_due_penalty - each_loan.penalty_amount
+#             pending_due += each_loan.remaining_balance
+#         total_amount_received += total_received
+#         total_principal_received += principal_received
+#         total_interest_received += interest_received
+#         total_fees_received += fees_received
+#         total_penalty_received += penalty_received
+#         queried_branch = Branch.objects.get(pk=branch)
+#         if total_interest_received < 0:
+#             total_interest_received = 0
+#         if total_principal_received < 0:
+#             total_principal_received = 0
+#         data = {
+#             "principal_balance": queried_branch.capital,
+#             "principal_received": total_principal_received,
+#             "interest received": total_interest_received,
+#             "fees received": total_fees_received,
+#             "penalty received": total_penalty_received,
+#             "total_received": total_amount_received,
+#             "new loans": len(new_loans),
+#             "number of repayments": len(number_of_repayments),
+#             "pending due": pending_due,
+#             "number of fully paid": len(number_of_fully_paid)
+#         }        
+#         return Response(data, status=status.HTTP_200_OK) 
 
 
 
