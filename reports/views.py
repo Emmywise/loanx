@@ -304,6 +304,7 @@ class BorrowersReport(APIView):
         new_rez = []
         for each_loan_released in loans_released:
             borrower = each_loan_released.borrower
+            print("borrower name",borrower.first_name)
             principal_released = float(each_loan_released.principal_amount)
             #maturity_date__lte = datetime.date.today()
             loan_schedule = LoanScheduler.objects.filter(loan = each_loan_released).filter(paid__gt = 0)
@@ -323,6 +324,7 @@ class BorrowersReport(APIView):
             principal_due_loan = 0
             interest_due_loan = 0
             fees_due_loan = 0
+            
             penalty_due_loan = 0
             for each_due_loan_schedule in due_loan_schedules:
                 principal_due_loan += each_due_loan_schedule.principal
@@ -331,6 +333,7 @@ class BorrowersReport(APIView):
                 penalty_due_loan += each_due_loan_schedule.penalty
             total_due_loan = principal_due_loan + interest_due_loan + fees_due_loan + penalty_due_loan
             data = {
+                "borrowers_name" : borrower.first_name,
                 "borrower": borrower.pk,
                 "principal_released": principal_released,
                 "principal_at_risk": principal_at_risk,
@@ -347,17 +350,21 @@ class BorrowersReport(APIView):
             }
             serializer = LoanBorrowerReportSerializer(data=data)
             if serializer.is_valid():
-                #serializer.save()
+                serializer.save()
                 rez.append(serializer.data)
+                #print(serializer.data) 
+                borrowers.append(borrower.first_name)
                 borrowers.append(borrower.pk)
         borrowers = (list(set(borrowers)))
         for each_rez in rez:
             if each_rez['borrower'] in borrowers:
                 new_rez.append(each_rez)
+                new_rez[0]["borroowers_name"] = borrower.first_name
                 borrowers.remove(each_rez['borrower'])
             else:
                 for each_new_rez in new_rez:
                     if each_new_rez['borrower'] == each_rez['borrower']:
+                        each_new_rez["borrowers_name"] = (each_rez["borrowers_name"])
                         each_new_rez["principal_released"] = str(float(each_rez["principal_released"])+ float(each_new_rez["principal_released"]))
                         each_new_rez["principal_at_risk"] = str(float(each_rez["principal_at_risk"]) + float(each_new_rez["principal_at_risk"]))
                         each_new_rez["due_loans_principal"] = str(float(each_rez["due_loans_principal"]) + float(each_new_rez["due_loans_principal"]))
