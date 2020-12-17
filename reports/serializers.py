@@ -59,3 +59,4 @@ class LoanBorrowerReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoanBorrowerReport
         fields = '__all__'
+        #fields = ('borrower', 'principal_released')
