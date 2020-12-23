@@ -561,7 +561,7 @@ class LoanOfficerReport(APIView):
         
         data = {
             "loans": total_loans,
-            "loan_type": '',
+            "loan_type": loan.loan_type.name,
             "principal_released": principal_released,
             "principal_at_risk": principal_at_risk,
             "due_loans_principal": principal_due_loan,
@@ -787,10 +787,10 @@ class LoanArrearsAgingReport(APIView):
 
 class LoanProductReport(APIView):
     def get(self, request, pk=None):
-        loans_released = Loan.objects.exclude(status = "processing").exclude(status = "denied")
+        loans_released = Loan.objects.exclude(status = "denied")
         rez = []
         loan_type = []
-        new_rez = []
+        data = []
         for each_loan_released in loans_released:
             borrower = each_loan_released.borrower
             principal_released = float(each_loan_released.principal_amount)
@@ -804,10 +804,11 @@ class LoanProductReport(APIView):
                 payments_interest += each_loan_schedule.interest
                 payments_fees += each_loan_schedule.fees
                 payments_penalty += each_loan_schedule.penalty
-            payments_principal = Decimal(amount_paid) - payments_interest - payments_fees - payments_penalty
+            payments_principal = Decimal(amount_paid) - Decimal(payments_interest) - Decimal(payments_fees) - Decimal(payments_penalty)
             if payments_principal < 0:
                 payments_principal = 0 
-            principal_at_risk = Decimal(principal_released) - payments_principal 
+            principal_at_risk = Decimal(principal_released) - Decimal(payments_principal)
+            principal_at_risk = math.ceil(principal_at_risk)
             due_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today())
             principal_due_loan = 0
             interest_due_loan = 0
@@ -819,9 +820,9 @@ class LoanProductReport(APIView):
                 fees_due_loan += each_due_loan_schedule.fees
                 penalty_due_loan += each_due_loan_schedule.penalty
             total_due_loan = principal_due_loan + interest_due_loan + fees_due_loan + penalty_due_loan
-            data = {
+            datas = {
                 "loan_type": each_loan_released.loan_type.name,
-                "borrower": borrower.pk,
+                "borrower": borrower.first_name + ' '+ borrower.last_name,
                 "principal_released": principal_released,
                 "principal_at_risk": principal_at_risk,
                 "due_loans_principal": principal_due_loan,
@@ -835,34 +836,88 @@ class LoanProductReport(APIView):
                 "payments_penalty":payments_penalty,
                 "payments_total": payments_principal + payments_interest + payments_fees + payments_penalty
             }
-            serializer = LoanBorrowerReportSerializer(data=data)
-            if serializer.is_valid():
-                #serializer.save()
-                rez.append(serializer.data)
-            #rez.append(data)
-            loan_type.append(each_loan_released.loan_type.name)
-        loan_type = (list(set(loan_type)))
-        # print(rez)
-        # print(loan_type)
-        # print(new_rez)
-        n_rez = []
-        for each_rez in rez:
-            print("le") 
-            outputs = []
-            if each_rez['loan_type'] in loan_type:
-                outputs.append(each_rez)
-            n_rez.append(outputs)
-        new_rez.append({each_rez['loan_type']:n_rez})
-            #     new_rez.append(each_rez)
-            #     #loan_type.remove(each_rez['loan_type'])
-            # else:
-            #     for each_new_rez in new_rez:
-            #         if each_new_rez['loan_type'] == each_rez['loan_type']:
-            #             new_rez.append(each_new_rez)
+            data.append(datas)
+        return Response(data, status = status.HTTP_200_OK)
 
-        # print(new_rez)
-        # return Response(new_rez, status = status.HTTP_200_OK) 
-        return Response(new_rez, status = status.HTTP_200_OK) 
+
+# class LoanProductReport(APIView):
+#     def get(self, request, pk=None):
+#         loans_released = Loan.objects.exclude(status = "processing").exclude(status = "denied")
+#         rez = []
+#         loan_type = []
+#         new_rez = []
+#         for each_loan_released in loans_released:
+#             borrower = each_loan_released.borrower
+#             principal_released = float(each_loan_released.principal_amount)
+#             #maturity_date__lte = datetime.date.today()
+#             loan_schedule = LoanScheduler.objects.filter(loan = each_loan_released).filter(paid__gt = 0)
+#             amount_paid = float(each_loan_released.amount_paid)
+#             payments_interest = 0
+#             payments_fees = 0
+#             payments_penalty = 0
+#             for each_loan_schedule in loan_schedule:
+#                 payments_interest += each_loan_schedule.interest
+#                 payments_fees += each_loan_schedule.fees
+#                 payments_penalty += each_loan_schedule.penalty
+#             payments_principal = Decimal(amount_paid) - payments_interest - payments_fees - payments_penalty
+#             if payments_principal < 0:
+#                 payments_principal = 0 
+#             principal_at_risk = Decimal(principal_released) - payments_principal 
+#             due_loan_schedules = LoanScheduler.objects.filter(date__lte = datetime.date.today())
+#             principal_due_loan = 0
+#             interest_due_loan = 0
+#             fees_due_loan = 0
+#             penalty_due_loan = 0
+#             for each_due_loan_schedule in due_loan_schedules:
+#                 principal_due_loan += each_due_loan_schedule.principal
+#                 interest_due_loan += each_due_loan_schedule.interest
+#                 fees_due_loan += each_due_loan_schedule.fees
+#                 penalty_due_loan += each_due_loan_schedule.penalty
+#             total_due_loan = principal_due_loan + interest_due_loan + fees_due_loan + penalty_due_loan
+#             data = {
+#                 "loan_type": each_loan_released.loan_type.name,
+#                 "borrower": borrower.pk,
+#                 "principal_released": principal_released,
+#                 "principal_at_risk": principal_at_risk,
+#                 "due_loans_principal": principal_due_loan,
+#                 "due_loans_interest": interest_due_loan,
+#                 "due_loans_fees": fees_due_loan,
+#                 "due_loans_penalty": penalty_due_loan,
+#                 "due_loans_total": total_due_loan,
+#                 "payments_principal":payments_principal,
+#                 "payments_interest":payments_interest,
+#                 "payments_fees":payments_fees,
+#                 "payments_penalty":payments_penalty,
+#                 "payments_total": payments_principal + payments_interest + payments_fees + payments_penalty
+#             }
+#             serializer = LoanBorrowerReportSerializer(data=data)
+#             if serializer.is_valid():
+#                 #serializer.save()
+#                 rez.append(serializer.data)
+#             #rez.append(data)
+#             loan_type.append(each_loan_released.loan_type.name)
+#         loan_type = (list(set(loan_type)))
+#         # print(rez)
+#         # print(loan_type)
+#         # print(new_rez)
+#         n_rez = []
+#         for each_rez in rez:
+#             print("le") 
+#             outputs = []
+#             if each_rez['loan_type'] in loan_type:
+#                 outputs.append(each_rez)
+#             n_rez.append(outputs)
+#         new_rez.append({each_rez['loan_type']:n_rez})
+#             #     new_rez.append(each_rez)
+#             #     #loan_type.remove(each_rez['loan_type'])
+#             # else:
+#             #     for each_new_rez in new_rez:
+#             #         if each_new_rez['loan_type'] == each_rez['loan_type']:
+#             #             new_rez.append(each_new_rez)
+
+#         # print(new_rez)
+#         # return Response(new_rez, status = status.HTTP_200_OK) 
+#         return Response(new_rez, status = status.HTTP_200_OK) 
 
 
 class CollectionReport(APIView):
@@ -1142,14 +1197,13 @@ class CollectionReport(APIView):
         root.append({"Restructured": data5})
         return Response(root, status=status.HTTP_200_OK) 
 
-
 class CollectorReportStaff(APIView):
     def get(self, request):
         staff = request.GET.get('staff')
         # Get Loan Loan Officers
         check_officer = LoanOfficer.objects.filter(id=staff).exists()
         if check_officer == False:
-            return Response({"error": "staff does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Staff does not exists with such staff"}, status=status.HTTP_404_NOT_FOUND)
         officers = LoanOfficer.objects.get(id=staff)
         officer_branch = officers.staff_id.user_id.branch.name
         name = officers.staff_id.user_id.user.first_name + ' ' + officers.staff_id.user_id.user.last_name
@@ -1189,6 +1243,54 @@ class CollectorReportStaff(APIView):
         }
         # root = dict.fromkeys(staffs, data)
         return Response(data)
+
+
+# class CollectorReportStaff(APIView):
+#     def get(self, request):
+#         staff = request.GET.get('staff')
+#         # Get Loan Loan Officers
+#         check_officer = LoanOfficer.objects.filter(id=staff).exists()
+#         if check_officer == False:
+#             return Response({"error": "staff does not exist"}, status=status.HTTP_404_NOT_FOUND)
+#         officers = LoanOfficer.objects.get(id=staff)
+#         officer_branch = officers.staff_id.user_id.branch.name
+#         name = officers.staff_id.user_id.user.first_name + ' ' + officers.staff_id.user_id.user.last_name
+#         ####
+#         get_officer = OfficerLoan.objects.filter(loan_officer=officers)
+#         ### Get all loan inside get_officer
+#         total_loans = 0
+#         total_principal = 0
+#         total_interest = 0
+#         total_fees = 0
+#         total_penalty = 0
+#         total = 0
+#         for officer in get_officer:
+#             loans = Loan.objects.filter(id=officer.loan.id).exclude(status='denied')
+#             ### get_loan_details
+#             total_loans += len(loans)
+#             for loan in loans:
+#                 get_schedule = LoanScheduler.objects.filter(loan=loan.id, status='settled').filter(paid__gt=0)
+#             for schedule in get_schedule:
+#                 get_principal = schedule.principal
+#                 total_principal += get_principal
+#                 total_interest += schedule.interest
+#                 total_fees += schedule.fees
+#                 total_penalty += schedule.penalty
+#             total = total_penalty + total_fees + total_interest + total_principal
+
+        
+#         data = {
+#             'total_loans': total_loans,
+#             'total_principal': total_principal,
+#             'total_interest': total_interest,
+#             'total_fees': total_fees,
+#             'total_penalty': total_penalty,
+#             'total': total,
+#             'branch': officer_branch,
+#             'name': name
+#         }
+#         # root = dict.fromkeys(staffs, data)
+#         return Response(data)
 
 
 
