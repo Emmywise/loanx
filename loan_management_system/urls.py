@@ -42,7 +42,7 @@ from loans.views import (
     LoanRepaymentViewSet, LoanCollateralViewSet, ApproveLoanRepaymentViewSet,
     LoanGuarantorViewSet, GuarantorFileViewSet, LoanTypeViewSet,
     RunBvnCheck, GetAccountName, GetLoanScore,LoanDisbursementViewSet,
-    LoanOfficerList, LoanOfficerDetail,FeesOutstandingLoan,
+    LoanOfficerList, LoanOfficerDetail,FeesOutstandingLoan, LoanSchedulerDetail, LoanSchedulerList,
     InterestOutstandingLoan, FullyPaidLoans, SearchLoanType, LoansByOfficers, LoanFeeViewSet,
     LoanCollateralList, LoanCollateralDetail, LoanAttachmentList, LoanAttachmentDetail, EarlySettledLoans,
     DueLoansBetween, DueLoansNoPayment, DueLoansPartPayment, GetDueLoansByDays, OverrideLoanMaturity,
@@ -193,7 +193,10 @@ urlpatterns = [
     path('api/outstanding_report/',OutstandingReport.as_view()),     
     path('api/at_a_glance_report/',AtAGlanceReport.as_view()), 
     path('api/monthly_report/', MonthlyReport.as_view()),   
-    path('api/all_enteries/', AllEnteries.as_view()),                        
+    path('api/all_enteries/', AllEnteries.as_view()),       
+    path('staffs/', include('staffs.urls')) ,                 
+    path('loan_scheduler/<int:pk>/', LoanSchedulerDetail.as_view()),
+    path('loan_scheduler/', LoanSchedulerList.as_view()),
     #path('api/initiate_credit_savings/', InitiateCreditSavings.as_view()),    
 ]
 

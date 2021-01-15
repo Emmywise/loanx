@@ -69,6 +69,7 @@ class Branch(models.Model):
 
 @receiver(pre_save, sender=Branch)
 def update_remaining_capital(sender, instance, **kwargs):
+    print(instance.open_date)
     instance.remaining_capital = Decimal(instance.capital) - Decimal(instance.spent_capital)
 
 @receiver(pre_save, sender=Branch)

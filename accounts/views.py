@@ -92,7 +92,6 @@ class CountryViewSet(viewsets.ModelViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
 
-
 class BranchViewSet(viewsets.ModelViewSet):
     serializer_class = BranchSerializer
 
@@ -100,6 +99,20 @@ class BranchViewSet(viewsets.ModelViewSet):
         queryset = Branch.objects.all()
 
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = BranchSerializer2(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+# class BranchViewSet(viewsets.ModelViewSet):
+#     serializer_class = BranchSerializer
+
+#     def get_queryset(self):
+#         queryset = Branch.objects.all()
+
+#         return queryset
 
 
 class BranchHolidayViewSet(viewsets.ModelViewSet):

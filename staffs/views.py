@@ -1,8 +1,15 @@
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth.models import User
-from .serializers import PayrollSerializer
-from .models import Payroll
+from .serializers import PayrollSerializer, StaffSerializer
+from .models import Payroll, Staff
+from accounts.models import *
+from django.db.models import Q
+from rest_framework import status
+from loan_management_system import permissions as perms
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 # Create your views here.
 
 
@@ -39,3 +46,53 @@ class PayrollViewSet(ModelViewSet):
                 queryset = queryset.filter(pk__in=validated_staffs)
 
         return queryset
+
+
+@api_view(['GET', 'DELETE', 'PATCH', 'POST'])
+def get_delete_update_staff(request, pk):
+    try:
+        staff = Staff.objects.get(pk=pk)
+    except Staff.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        permission_classes = (perms.IsStaffOrAdmin,)
+        serializer = StaffSerializer(staff)
+        return Response(serializer.data)
+
+    elif request.method == 'PATCH':
+        permission_classes = (perms.IsStaffOrAdmin,)
+        serializer = StaffSerializer(staff, data=request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    elif request.method == 'DELETE':
+        borrower.delete()
+        return Response("Borrower deleted successfully", status=204)
+
+
+@api_view(['GET', 'POST'])
+def get_post_staff(request):
+    # get all restaurants
+    if request.method == 'GET':
+        permission_classes = (perms.IsStaffOrAdmin,)
+        ref = request.GET.get("staff_search")
+        if ref:
+            staff = Staff.objects.filter(Q(user_id__user__first_name__startswith=ref))
+            serializer = StaffSerializer(staff, many=True)
+            return Response(serializer.data)
+        staffs = Staff.objects.all()
+        serializer = StaffSerializer(staffs, many=True)
+        return Response(serializer.data)
+    # insert a new record for a restaurant
+    elif request.method == 'POST':
+        data = {
+            'user_id': request.data.get('user_id'),
+        }
+        serializer = StaffSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

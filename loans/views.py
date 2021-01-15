@@ -25,6 +25,7 @@ from .models import *
 from accounts.models import (
 	Profile
 )
+import cloudinary.uploader
 from borrowers.models import *
 from borrowers.serializers import BorrowerSerializer
 from .utils import details_from_bvn, compare_dates, get_loan_score, get_account_name
@@ -1809,6 +1810,51 @@ class SaveAuthCode(APIView):
 		except:
 			return Response({"msg":"charge was not successful, retry with enough balance and good network"}, status=status.HTTP_400_BAD_REQUEST) 
 
+class LoanSchedulerList(APIView):
+	parser_class = (FileUploadParser,)
+	def post(self, request):
+		# initialize a loan by customer
+		serializer = LoanSchedulerSerializer(data=request.data)
+		if serializer.is_valid():
+			# save loan and send loan application email.
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_201_CREATED)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+	def get(self, request, pk=None):
+		queryset = LoanScheduler.objects.all()
+		loan = self.request.GET.get('loan')
+		loan_scheduler = LoanScheduler.objects.filter(loan=loan)
+		serializer = LoanSchedulerSerializer(loan_scheduler, many=True)
+		return Response(serializer.data)
+
+class LoanSchedulerDetail(APIView):
+	"""
+	Retrieve, update or delete a snippet instance.
+	"""
+	def get_object(self, pk):
+		try:
+			return LoanScheduler.objects.get(pk=pk)
+		except LoanScheduler.DoesNotExist:
+			raise Http404
+
+	def get(self, request, pk, format=None):
+		loan_scheduler = self.get_object(pk)
+		serializer = LoanSchedulerSerializer(loan_scheduler)
+		return Response(serializer.data)
+
+	def put(self, request, pk, format=None):
+		loan_scheduler = self.get_object(pk)
+		serializer = LoanSchedulerSerializer(loan_scheduler, data=request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+	def delete(self, request, pk, format=None):
+		loan_scheduler = self.get_object(pk)
+		loan_scheduler.delete()
+		return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class OverrideLoanMaturity(APIView):
